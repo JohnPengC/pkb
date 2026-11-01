@@ -1,0 +1,8 @@
+# 构建上下文瘦身：避免把本地产物/依赖/密钥传入镜像构建
+target/
+**/node_modules/
+storage/
+.git/
+.env
+*.log
+.DS_Store

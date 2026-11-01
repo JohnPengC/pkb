@@ -6,8 +6,6 @@ services:
       POSTGRES_DB: pkb
       POSTGRES_USER: pkb
       POSTGRES_PASSWORD: pkb
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -16,5 +14,35 @@ services:
       timeout: 3s
       retries: 10
 
+  app:
+    build: .
+    container_name: pkb-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pkb
+      CHAT_BASE_URL: ${CHAT_BASE_URL}
+      CHAT_API_KEY: ${CHAT_API_KEY}
+      CHAT_MODEL: ${CHAT_MODEL}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL}
+    ports:
+      - "8080:8080"
+    volumes:
+      - pkb-storage:/data/storage
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pkb-ollama
+    profiles: ["local-llm"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
 volumes:
   pgdata:
+  pkb-storage:
+  ollama-data:

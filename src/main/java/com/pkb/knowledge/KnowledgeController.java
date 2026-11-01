@@ -19,6 +19,7 @@ public class KnowledgeController {
 
     private final KnowledgeService knowledgeService;
     private final TagRepository tagRepository;
+    private final DiffService diffService;
 
     @GetMapping
     public Page<DocSummary> list(@RequestParam(required = false) DocStatus status,
@@ -70,5 +71,21 @@ public class KnowledgeController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable UUID id) {
         knowledgeService.delete(id);
+    }
+
+    @GetMapping("/{id}/diff")
+    public List<DiffLine> diff(@PathVariable UUID id,
+                               @RequestParam int from,
+                               @RequestParam int to) {
+        String oldContent = knowledgeService.getVersion(id, from).getContent();
+        String newContent = knowledgeService.getVersion(id, to).getContent();
+        return diffService.diff(oldContent, newContent);
+    }
+
+    @PostMapping("/{id}/rollback/{versionNo}")
+    public DocDetail rollback(@PathVariable UUID id, @PathVariable int versionNo) {
+        var version = knowledgeService.getVersion(id, versionNo);
+        return DocDetail.from(knowledgeService.save(
+                id, version.getContent(), "回滚到 v" + versionNo));
     }
 }

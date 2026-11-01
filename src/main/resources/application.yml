@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: pkb
+  datasource:
+    url: jdbc:postgresql://localhost:5432/pkb
+    username: pkb
+    password: pkb
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  jackson:
+    default-property-inclusion: non_null
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+pkb:
+  storage-path: ${PKB_STORAGE_PATH:./storage}
+  model:
+    chat:
+      base-url: ${CHAT_BASE_URL:https://api.moonshot.cn/v1}
+      api-key: ${CHAT_API_KEY:changeme}
+      model: ${CHAT_MODEL:moonshot-v1-8k}
+    embedding:
+      base-url: ${EMBEDDING_BASE_URL:https://api.moonshot.cn/v1}
+      api-key: ${EMBEDDING_API_KEY:changeme}
+      model: ${EMBEDDING_MODEL:text-embedding-3-small}
+      dimension: 1024

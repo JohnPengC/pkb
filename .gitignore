@@ -1,0 +1,12 @@
+target/
+*.class
+*.jar
+!.mvn/wrapper/*.jar
+.idea/
+.vscode/
+*.iml
+.DS_Store
+storage/
+node_modules/
+frontend/dist/
+.env

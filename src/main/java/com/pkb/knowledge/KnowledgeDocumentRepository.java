@@ -2,13 +2,19 @@ package com.pkb.knowledge;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface KnowledgeDocumentRepository extends JpaRepository<KnowledgeDocument, UUID> {
+
+    /** DocDetail 视图需要 sourceDocument（控制器层在事务外转换，open-in-view 已关） */
+    @EntityGraph(attributePaths = "sourceDocument")
+    Optional<KnowledgeDocument> findById(UUID id);
 
     @Query(value = """
             SELECT d.* FROM knowledge_document d

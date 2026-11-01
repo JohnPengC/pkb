@@ -46,7 +46,7 @@ public class ChunkRepository {
                 SELECT c.id, c.document_id, c.content, 0.5 AS distance
                 FROM document_chunk c
                 JOIN knowledge_document d ON d.id = c.document_id
-                WHERE c.content ILIKE '%' || ? || '%'
+                WHERE c.content ILIKE '%%' || ? || '%%'
                 %s
                 LIMIT ?
                 """.formatted(confirmedOnly ? "AND d.status = 'CONFIRMED'" : "");

@@ -1,0 +1,12 @@
+pkb:
+  storage-path: ${java.io.tmpdir}/pkb-test-storage
+  model:
+    chat:
+      base-url: http://localhost:1
+      api-key: test
+      model: test-chat
+    embedding:
+      base-url: http://localhost:1
+      api-key: test
+      model: test-embedding
+      dimension: 1024

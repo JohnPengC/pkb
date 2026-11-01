@@ -1,10 +1,8 @@
 package com.pkb;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class PkbApplicationTests {
+class PkbApplicationTests extends AbstractIntegrationTest {
     @Test
     void contextLoads() {
     }

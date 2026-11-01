@@ -1,11 +1,18 @@
 package com.pkb.knowledge;
 
+import com.pkb.common.error.BizException;
 import com.pkb.distillation.DistilledDraft;
 import com.pkb.ingestion.SourceDocument;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -13,6 +20,7 @@ public class KnowledgeService {
 
     private final KnowledgeDocumentRepository documentRepository;
     private final VersionRepository versionRepository;
+    private final TagRepository tagRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /** 由提炼结果创建 v1 草稿，并触发首次向量化事件。 */
@@ -34,5 +42,88 @@ public class KnowledgeService {
 
         eventPublisher.publishEvent(new DocumentSavedEvent(doc.getId()));
         return doc;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<KnowledgeDocument> list(DocStatus status, String tag, String keyword, Pageable pageable) {
+        return documentRepository.search(
+                status == null ? null : status.name(),
+                keyword == null || keyword.isBlank() ? null : keyword.strip(),
+                tag == null || tag.isBlank() ? null : tag.strip(),
+                pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public KnowledgeDocument get(UUID id) {
+        return documentRepository.findById(id)
+                .orElseThrow(() -> new BizException("知识文档不存在"));
+    }
+
+    /** 保存编辑内容：版本 +1；首次保存自动确认。 */
+    @Transactional
+    public KnowledgeDocument save(UUID id, String content, String changeNote) {
+        KnowledgeDocument doc = get(id);
+        int nextVersion = doc.getCurrentVersion() + 1;
+        doc.setContent(content);
+        doc.setCurrentVersion(nextVersion);
+        doc.setStatus(DocStatus.CONFIRMED);
+        doc.setUpdatedAt(OffsetDateTime.now());
+        documentRepository.save(doc);
+
+        KnowledgeDocumentVersion version = new KnowledgeDocumentVersion();
+        version.setDocument(doc);
+        version.setVersionNo(nextVersion);
+        version.setContent(content);
+        version.setChangeNote(changeNote);
+        versionRepository.save(version);
+
+        eventPublisher.publishEvent(new DocumentSavedEvent(doc.getId()));
+        return doc;
+    }
+
+    /** 不改正文，直接确认草稿。 */
+    @Transactional
+    public KnowledgeDocument confirm(UUID id) {
+        KnowledgeDocument doc = get(id);
+        doc.setStatus(DocStatus.CONFIRMED);
+        doc.setUpdatedAt(OffsetDateTime.now());
+        return documentRepository.save(doc);
+    }
+
+    @Transactional(readOnly = true)
+    public List<KnowledgeDocumentVersion> listVersions(UUID id) {
+        get(id);
+        return versionRepository.findByDocumentIdOrderByVersionNoDesc(id);
+    }
+
+    @Transactional(readOnly = true)
+    public KnowledgeDocumentVersion getVersion(UUID id, int versionNo) {
+        return versionRepository.findByDocumentIdAndVersionNo(id, versionNo)
+                .orElseThrow(() -> new BizException("版本不存在：v" + versionNo));
+    }
+
+    @Transactional
+    public KnowledgeDocument setTags(UUID id, List<String> tagNames) {
+        KnowledgeDocument doc = get(id);
+        tagRepository.deleteDocumentTags(id);
+        for (String name : tagNames) {
+            String clean = name.strip();
+            if (clean.isEmpty()) {
+                continue;
+            }
+            Tag tag = tagRepository.findByName(clean).orElseGet(() -> {
+                Tag t = new Tag();
+                t.setName(clean);
+                return tagRepository.save(t);
+            });
+            tagRepository.link(id, tag.getId());
+        }
+        return doc;
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        get(id);
+        documentRepository.deleteById(id);
     }
 }

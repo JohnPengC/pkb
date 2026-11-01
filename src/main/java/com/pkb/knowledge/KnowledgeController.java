@@ -1,0 +1,74 @@
+package com.pkb.knowledge;
+
+import com.pkb.knowledge.dto.DocViews.DocDetail;
+import com.pkb.knowledge.dto.DocViews.DocSummary;
+import com.pkb.knowledge.dto.DocViews.VersionView;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/docs")
+@RequiredArgsConstructor
+public class KnowledgeController {
+
+    private final KnowledgeService knowledgeService;
+    private final TagRepository tagRepository;
+
+    @GetMapping
+    public Page<DocSummary> list(@RequestParam(required = false) DocStatus status,
+                                 @RequestParam(required = false) String tag,
+                                 @RequestParam(required = false) String keyword,
+                                 @RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(defaultValue = "20") int size) {
+        return knowledgeService.list(status, tag, keyword, PageRequest.of(page, size))
+                .map(DocSummary::from);
+    }
+
+    @GetMapping("/{id}")
+    public DocDetail detail(@PathVariable UUID id) {
+        return DocDetail.from(knowledgeService.get(id));
+    }
+
+    @PutMapping("/{id}")
+    public DocDetail save(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        return DocDetail.from(knowledgeService.save(id, body.get("content"), body.get("changeNote")));
+    }
+
+    @PostMapping("/{id}/confirm")
+    public DocDetail confirm(@PathVariable UUID id) {
+        return DocDetail.from(knowledgeService.confirm(id));
+    }
+
+    @GetMapping("/{id}/versions")
+    public List<VersionView> versions(@PathVariable UUID id) {
+        return knowledgeService.listVersions(id).stream().map(VersionView::from).toList();
+    }
+
+    @GetMapping("/{id}/versions/{versionNo}")
+    public Map<String, Object> version(@PathVariable UUID id, @PathVariable int versionNo) {
+        var v = knowledgeService.getVersion(id, versionNo);
+        return Map.of("versionNo", v.getVersionNo(), "content", v.getContent(),
+                "changeNote", v.getChangeNote() == null ? "" : v.getChangeNote());
+    }
+
+    @PutMapping("/{id}/tags")
+    public DocDetail setTags(@PathVariable UUID id, @RequestBody Map<String, List<String>> body) {
+        return DocDetail.from(knowledgeService.setTags(id, body.getOrDefault("tags", List.of())));
+    }
+
+    @GetMapping("/tags")
+    public List<String> allTags() {
+        return tagRepository.findAllInUse().stream().map(Tag::getName).toList();
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable UUID id) {
+        knowledgeService.delete(id);
+    }
+}

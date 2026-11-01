@@ -14,6 +14,12 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+  ai:
+    mcp:
+      server:
+        name: pkb-knowledge
+        version: 0.1.0
+        instructions: "个人知识库：检索与读取已确认的知识文档"
   servlet:
     multipart:
       max-file-size: 50MB

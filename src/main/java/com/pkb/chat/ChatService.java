@@ -34,7 +34,8 @@ public class ChatService {
                 .data(hits.stream().map(h -> Map.of(
                         "documentId", h.documentId().toString(),
                         "title", h.title(),
-                        "snippet", h.snippet())).toList())
+                        "snippet", h.snippet(),
+                        "score", h.score())).toList())
                 .build();
         ServerSentEvent<Object> doneEvent = ServerSentEvent.<Object>builder()
                 .event("done").data("{}").build();

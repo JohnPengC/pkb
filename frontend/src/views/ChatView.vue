@@ -44,49 +44,10 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, ref } from 'vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { Loading } from '@element-plus/icons-vue'
-
-const question = ref('')
-const answer = ref('')
-const sources = ref([])
-const includeDraft = ref(false)
-const streaming = ref(false)
-let eventSource = null
-
-function ask() {
-  if (!question.value.trim() || streaming.value) return
-  close()
-  answer.value = ''
-  sources.value = []
-  streaming.value = true
-
-  const params = new URLSearchParams({ question: question.value, includeDraft: includeDraft.value })
-  eventSource = new EventSource(`/api/chat?${params}`)
-  eventSource.addEventListener('sources', (e) => {
-    sources.value = JSON.parse(e.data)
-  })
-  eventSource.addEventListener('token', (e) => {
-    answer.value += e.data
-  })
-  eventSource.addEventListener('done', () => {
-    streaming.value = false
-    close()
-  })
-  eventSource.onerror = () => {
-    streaming.value = false
-    close()
-  }
-}
-
-function close() {
-  eventSource?.close()
-  eventSource = null
-}
-
-onBeforeUnmount(close)
+import { answer, ask, includeDraft, question, sources, streaming } from '../store/chat'
 </script>
 
 <style scoped>

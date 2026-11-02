@@ -35,6 +35,10 @@ management:
 
 pkb:
   storage-path: ${PKB_STORAGE_PATH:./storage}
+  converter:
+    enabled: ${MARKITDOWN_ENABLED:true}
+    command: ${MARKITDOWN_COMMAND:markitdown}
+    timeout-seconds: ${MARKITDOWN_TIMEOUT_SECONDS:120}
   model:
     chat:
       base-url: ${CHAT_BASE_URL:https://api.moonshot.cn/v1}

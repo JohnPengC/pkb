@@ -1,5 +1,7 @@
 pkb:
   storage-path: ${java.io.tmpdir}/pkb-test-storage
+  converter:
+    enabled: false
   model:
     chat:
       base-url: http://localhost:1

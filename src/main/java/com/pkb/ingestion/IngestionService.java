@@ -27,7 +27,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class IngestionService {
 
-    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("docx", "pdf", "txt", "md");
+    private static final Set<String> SUPPORTED_EXTENSIONS =
+            Set.of("docx", "pdf", "pptx", "xlsx", "csv", "txt", "md");
     private static final long MAX_FILE_SIZE = 50L * 1024 * 1024;
 
     private final SourceDocumentRepository sourceRepository;
@@ -42,7 +43,7 @@ public class IngestionService {
         String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
         String ext = extensionOf(original);
         if (!SUPPORTED_EXTENSIONS.contains(ext)) {
-            throw new BizException("不支持的文件格式：" + ext + "，目前支持 docx/pdf/txt/md");
+            throw new BizException("不支持的文件格式：" + ext + "，目前支持 docx/pdf/pptx/xlsx/csv/txt/md");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new BizException("文件超过 50MB 上限");

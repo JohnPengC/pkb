@@ -41,4 +41,14 @@ class IngestionServiceTest extends AbstractIntegrationTest {
         assertThat(task.getStatus()).isEqualTo(TaskStatus.PENDING);
         assertThat(task.getSourceDocument().getContentHash()).hasSize(64);
     }
+
+    @Test
+    void acceptsStructuredFormats() {
+        for (String name : new String[]{"d.pptx", "e.xlsx", "f.csv"}) {
+            var file = new MockMultipartFile("file", name, "application/octet-stream",
+                    ("内容-" + name).getBytes());
+            ImportTask task = ingestionService.createFromFile(file);
+            assertThat(task.getStatus()).isEqualTo(TaskStatus.PENDING);
+        }
+    }
 }

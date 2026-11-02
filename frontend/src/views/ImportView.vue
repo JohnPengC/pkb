@@ -4,8 +4,8 @@
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header>上传文件（docx / pdf / txt / md，≤50MB）</template>
-          <el-upload drag :show-file-list="false" :http-request="doUpload" accept=".docx,.pdf,.txt,.md">
+          <template #header>上传文件（docx / pdf / pptx / xlsx / csv / txt / md，≤50MB）</template>
+          <el-upload drag :show-file-list="false" :http-request="doUpload" accept=".docx,.pdf,.pptx,.xlsx,.csv,.txt,.md">
             <el-icon size="40"><UploadFilled /></el-icon>
             <div>拖拽文件到此处，或点击选择</div>
           </el-upload>

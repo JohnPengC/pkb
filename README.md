@@ -1,6 +1,6 @@
 # PKB — 个人知识库
 
-把本地文档（docx/PDF/txt/md）和收藏网页，用 LLM 提炼为结构化知识文档，形成可纠错、可检索的个人知识库；并以 MCP Server 形式外挂到 Claude Code / Kimi Code 等 AI 编程工具，或在内置界面中基于知识库进行 RAG 问答。
+把本地文档（docx / PDF / PPTX / XLSX / CSV / txt / md）和收藏网页，用 LLM 提炼为结构化知识文档，形成可纠错、可检索的个人知识库；并以 MCP Server 形式外挂到 Claude Code / Kimi Code 等 AI 编程工具，或在内置界面中基于知识库进行 RAG 问答。
 
 ## 功能
 

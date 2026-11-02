@@ -24,6 +24,9 @@ public class DraftParser {
         if (title.isEmpty()) {
             title = fallbackTitle;
         }
-        return new DistilledDraft(title, m.group(2).strip(), m.group(3).strip());
+        String content = m.group(3).strip();
+        // 部分模型会在正文末尾追加结束标记，剥掉以免混入内容
+        content = content.replaceFirst("(?s)<<<END>>>\\s*$", "").strip();
+        return new DistilledDraft(title, m.group(2).strip(), content);
     }
 }

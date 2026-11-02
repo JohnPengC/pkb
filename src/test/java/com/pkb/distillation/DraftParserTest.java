@@ -45,4 +45,19 @@ class DraftParserTest {
         DistilledDraft draft = parser.parse(output, "兜底标题");
         assertThat(draft.title()).isEqualTo("兜底标题");
     }
+
+    @Test
+    void stripsTrailingEndMarker() {
+        String output = """
+                <<<TITLE>>>
+                标题
+                <<<SUMMARY>>>
+                摘要
+                <<<CONTENT>>>
+                正文内容。
+                <<<END>>>
+                """;
+        DistilledDraft draft = parser.parse(output, "兜底标题");
+        assertThat(draft.content()).isEqualTo("正文内容。");
+    }
 }

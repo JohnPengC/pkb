@@ -124,6 +124,8 @@ public class KnowledgeService {
     @Transactional
     public void delete(UUID id) {
         get(id);
+        versionRepository.deleteByDocumentId(id);
         documentRepository.deleteById(id);
+        // document_chunk / document_tag 由外键 ON DELETE CASCADE 清理
     }
 }

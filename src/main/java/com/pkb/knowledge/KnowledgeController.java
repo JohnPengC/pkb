@@ -33,17 +33,17 @@ public class KnowledgeController {
 
     @GetMapping("/{id}")
     public DocDetail detail(@PathVariable UUID id) {
-        return DocDetail.from(knowledgeService.get(id));
+        return toDetail(knowledgeService.get(id));
     }
 
     @PutMapping("/{id}")
     public DocDetail save(@PathVariable UUID id, @RequestBody Map<String, String> body) {
-        return DocDetail.from(knowledgeService.save(id, body.get("content"), body.get("changeNote")));
+        return toDetail(knowledgeService.save(id, body.get("content"), body.get("changeNote")));
     }
 
     @PostMapping("/{id}/confirm")
     public DocDetail confirm(@PathVariable UUID id) {
-        return DocDetail.from(knowledgeService.confirm(id));
+        return toDetail(knowledgeService.confirm(id));
     }
 
     @GetMapping("/{id}/versions")
@@ -60,7 +60,7 @@ public class KnowledgeController {
 
     @PutMapping("/{id}/tags")
     public DocDetail setTags(@PathVariable UUID id, @RequestBody Map<String, List<String>> body) {
-        return DocDetail.from(knowledgeService.setTags(id, body.getOrDefault("tags", List.of())));
+        return toDetail(knowledgeService.setTags(id, body.getOrDefault("tags", List.of())));
     }
 
     @GetMapping("/tags")
@@ -85,7 +85,13 @@ public class KnowledgeController {
     @PostMapping("/{id}/rollback/{versionNo}")
     public DocDetail rollback(@PathVariable UUID id, @PathVariable int versionNo) {
         var version = knowledgeService.getVersion(id, versionNo);
-        return DocDetail.from(knowledgeService.save(
+        return toDetail(knowledgeService.save(
                 id, version.getContent(), "回滚到 v" + versionNo));
+    }
+
+    private DocDetail toDetail(KnowledgeDocument doc) {
+        List<String> tags = tagRepository.findByDocumentId(doc.getId()).stream()
+                .map(Tag::getName).toList();
+        return DocDetail.from(doc, tags);
     }
 }

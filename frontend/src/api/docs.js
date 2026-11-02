@@ -35,3 +35,7 @@ export function setTags(id, tags) {
 export function allTags() {
   return http.get('/docs/tags').then((r) => r.data)
 }
+
+export function deleteDoc(id) {
+  return http.delete(`/docs/${id}`)
+}

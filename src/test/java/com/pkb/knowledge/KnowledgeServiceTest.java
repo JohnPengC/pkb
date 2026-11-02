@@ -23,6 +23,8 @@ class KnowledgeServiceTest extends AbstractIntegrationTest {
     SourceDocumentRepository sourceRepository;
     @Autowired
     VersionRepository versionRepository;
+    @Autowired
+    KnowledgeDocumentRepository documentRepository;
 
     @Test
     void saveCreatesNewVersionAndConfirms() {
@@ -59,6 +61,22 @@ class KnowledgeServiceTest extends AbstractIntegrationTest {
         var page = knowledgeService.list(null, "rag", null,
                 org.springframework.data.domain.PageRequest.of(0, 10));
         assertThat(page.getContent()).extracting(KnowledgeDocument::getId).contains(doc.getId());
+    }
+
+    @Test
+    void deleteRemovesDocumentVersionsAndTagLinks() {
+        KnowledgeDocument doc = knowledgeService.createDraft(newSource(),
+                new DistilledDraft("标题", "摘要", "内容"));
+        knowledgeService.save(doc.getId(), "v2 内容", "编辑");
+        knowledgeService.setTags(doc.getId(), List.of("待删"));
+
+        knowledgeService.delete(doc.getId());
+
+        assertThat(documentRepository.findById(doc.getId())).isEmpty();
+        assertThat(versionRepository.findByDocumentIdOrderByVersionNoDesc(doc.getId())).isEmpty();
+        var after = knowledgeService.list(null, "待删", null,
+                org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(after.getContent()).isEmpty();
     }
 
     private SourceDocument newSource() {

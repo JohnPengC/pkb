@@ -19,6 +19,7 @@
             <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
           </template>
           <el-button @click="drawerVisible = true">版本历史</el-button>
+          <el-button type="danger" plain @click="doDelete">删除</el-button>
         </el-space>
       </template>
     </el-page-header>
@@ -70,7 +71,7 @@ import { MdEditor, MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  confirmDoc, diffVersions, getDoc, listVersions, rollback, saveDoc, setTags
+  confirmDoc, deleteDoc, diffVersions, getDoc, listVersions, rollback, saveDoc, setTags
 } from '../api/docs'
 
 const route = useRoute()
@@ -105,6 +106,7 @@ async function load() {
   loading.value = true
   try {
     doc.value = await getDoc(id)
+    docTags.value = doc.value.tags || []
     versions.value = await listVersions(id)
   } finally {
     loading.value = false
@@ -138,8 +140,20 @@ async function doConfirm() {
 }
 
 async function doSetTags(tags) {
-  await setTags(id, tags)
+  doc.value = await setTags(id, tags)
+  docTags.value = doc.value.tags || []
   ElMessage.success('标签已更新')
+}
+
+async function doDelete() {
+  await ElMessageBox.confirm(
+    `将删除「${doc.value.title}」及其全部版本与索引，删除后不可恢复。确定删除？`,
+    '删除确认',
+    { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+  )
+  await deleteDoc(id)
+  ElMessage.success('文档已删除')
+  router.push('/docs')
 }
 
 async function selectVersion(version) {

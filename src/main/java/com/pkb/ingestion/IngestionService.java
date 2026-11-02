@@ -1,6 +1,8 @@
 package com.pkb.ingestion;
 
 import com.pkb.common.error.BizException;
+import com.pkb.knowledge.KnowledgeDocumentRepository;
+import com.pkb.knowledge.KnowledgeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,8 @@ public class IngestionService {
     private final SourceDocumentRepository sourceRepository;
     private final ImportTaskRepository taskRepository;
     private final TaskLauncher taskLauncher;
+    private final KnowledgeDocumentRepository knowledgeDocumentRepository;
+    private final KnowledgeService knowledgeService;
 
     @Value("${pkb.storage-path}")
     private String storagePath;
@@ -106,6 +110,26 @@ public class IngestionService {
         task.markStatus(TaskStatus.PENDING);
         launchAfterCommit(task.getId());
         return task;
+    }
+
+    /** 级联删除导入记录：任务、其生成的知识文档（含版本/块/标签）、源记录与磁盘文件。删除后同内容可重新导入。 */
+    @Transactional
+    public void deleteTask(UUID taskId) {
+        ImportTask task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new BizException("任务不存在"));
+        if (task.getStatus() != TaskStatus.COMPLETED && task.getStatus() != TaskStatus.FAILED) {
+            throw new BizException("任务执行中，暂不能删除");
+        }
+        SourceDocument source = task.getSourceDocument();
+        knowledgeDocumentRepository.findBySourceDocumentId(source.getId())
+                .ifPresent(doc -> knowledgeService.delete(doc.getId()));
+        taskRepository.deleteAllBySourceDocumentId(source.getId());
+        sourceRepository.delete(source);
+        try {
+            Files.deleteIfExists(Path.of(source.getStoragePath()));
+        } catch (Exception e) {
+            // 磁盘文件清理尽力而为，不阻断记录删除
+        }
     }
 
     private ImportTask createAndLaunch(SourceDocument doc) {

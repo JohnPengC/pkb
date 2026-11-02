@@ -17,3 +17,7 @@ export function listTasks() {
 export function retryTask(id) {
   return http.post(`/ingest/tasks/${id}/retry`).then((r) => r.data)
 }
+
+export function deleteTask(id) {
+  return http.delete(`/ingest/tasks/${id}`)
+}

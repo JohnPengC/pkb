@@ -16,6 +16,9 @@ public interface KnowledgeDocumentRepository extends JpaRepository<KnowledgeDocu
     @EntityGraph(attributePaths = "sourceDocument")
     Optional<KnowledgeDocument> findById(UUID id);
 
+    /** 按来源文档过滤（导入记录删除时定位其生成的知识文档） */
+    Optional<KnowledgeDocument> findBySourceDocumentId(UUID sourceDocumentId);
+
     @Query(value = """
             SELECT d.* FROM knowledge_document d
             WHERE (:status IS NULL OR d.status = :status)

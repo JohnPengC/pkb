@@ -15,4 +15,7 @@ public interface ImportTaskRepository extends JpaRepository<ImportTask, UUID> {
 
     @EntityGraph(attributePaths = "sourceDocument")
     List<ImportTask> findAllByOrderByCreatedAtDesc();
+
+    /** 级联删除导入记录：先移除来源文档的全部任务 */
+    void deleteAllBySourceDocumentId(UUID sourceDocumentId);
 }

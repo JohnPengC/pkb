@@ -35,9 +35,11 @@
       <el-table-column prop="updatedAt" label="更新时间" width="200">
         <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="100">
+      <el-table-column label="操作" width="140">
         <template #default="{ row }">
           <el-button v-if="row.status === 'FAILED'" size="small" @click="doRetry(row.id)">重试</el-button>
+          <el-button v-if="['COMPLETED', 'FAILED'].includes(row.status)" size="small" type="danger"
+                     plain @click="doDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -47,8 +49,8 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { listTasks, retryTask, submitUrl, uploadFile } from '../api/ingest'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { deleteTask, listTasks, retryTask, submitUrl, uploadFile } from '../api/ingest'
 
 const url = ref('')
 const submitting = ref(false)
@@ -89,6 +91,20 @@ async function doSubmitUrl() {
 
 async function doRetry(id) {
   await retryTask(id)
+  refresh()
+}
+
+async function doDelete(row) {
+  const extra = row.status === 'COMPLETED'
+    ? '，其生成的知识文档（含全部版本）也将一并删除'
+    : ''
+  await ElMessageBox.confirm(
+    `将删除导入记录「${row.sourceLabel}」${extra}，删除后同内容文件可重新导入。确定删除？`,
+    '删除确认',
+    { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+  )
+  await deleteTask(row.id)
+  ElMessage.success('导入记录已删除')
   refresh()
 }
 

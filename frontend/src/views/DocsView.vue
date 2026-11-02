@@ -29,6 +29,12 @@
       <el-table-column label="更新时间" width="180">
         <template #default="{ row }">{{ new Date(row.updatedAt).toLocaleString('zh-CN') }}</template>
       </el-table-column>
+      <el-table-column label="操作" width="90">
+        <template #default="{ row }">
+          <el-button size="small" type="danger" plain
+                     @click.stop="doDelete(row)">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <el-pagination style="margin-top: 12px" layout="total, prev, pager, next"
@@ -40,7 +46,8 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { allTags, listDocs } from '../api/docs'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { allTags, deleteDoc, listDocs } from '../api/docs'
 
 const router = useRouter()
 const filters = reactive({ status: null, tag: null, keyword: null })
@@ -59,6 +66,17 @@ async function load(pageNo = 0) {
 
 function open(id) {
   router.push(`/docs/${id}`)
+}
+
+async function doDelete(row) {
+  await ElMessageBox.confirm(
+    `将删除「${row.title}」及其全部版本与索引，删除后不可恢复。确定删除？`,
+    '删除确认',
+    { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+  )
+  await deleteDoc(row.id)
+  ElMessage.success('文档已删除')
+  load(page.value.number)
 }
 
 onMounted(async () => {

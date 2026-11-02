@@ -35,6 +35,11 @@ public class IngestionController {
         return TaskView.from(ingestionService.retry(id));
     }
 
+    @DeleteMapping("/tasks/{id}")
+    public void delete(@PathVariable UUID id) {
+        ingestionService.deleteTask(id);
+    }
+
     public record TaskView(UUID id, String status, String errorMessage, int retryCount,
                            String sourceLabel, String createdAt, String updatedAt) {
         static TaskView from(ImportTask task) {

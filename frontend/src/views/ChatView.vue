@@ -11,16 +11,34 @@
     </el-space>
 
     <el-card v-if="answer || streaming" shadow="never" style="margin-top: 12px">
-      <MdPreview :modelValue="answer" />
+      <template v-if="streaming && !answer">
+        <el-skeleton :rows="4" animated />
+        <div class="waiting-hint">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          正在检索资料并生成回答…
+        </div>
+      </template>
+      <template v-else>
+        <MdPreview :modelValue="answer" />
+        <span v-if="streaming" class="stream-cursor">▍</span>
+      </template>
     </el-card>
 
-    <div v-if="sources.length" style="margin-top: 12px">
-      <h4>引用来源</h4>
-      <el-card v-for="(s, i) in sources" :key="s.documentId" shadow="hover"
-               style="margin-bottom: 8px; cursor: pointer" @click="$router.push(`/docs/${s.documentId}`)">
-        <b>[{{ i + 1 }}] {{ s.title }}</b>
-        <div style="color: #606266; font-size: 13px">{{ s.snippet }}</div>
-      </el-card>
+    <div v-if="sources.length" class="sources-block">
+      <h4>引用来源（{{ sources.length }}）</h4>
+      <div v-for="(s, i) in sources" :key="i" class="source-item"
+           @click="$router.push(`/docs/${s.documentId}`)">
+        <span class="source-index">[{{ i + 1 }}]</span>
+        <div class="source-body">
+          <div class="source-title">
+            <span class="source-title-text">{{ s.title }}</span>
+            <el-tag size="small" effect="plain" class="source-score">
+              相关度 {{ Math.round((s.score || 0) * 100) }}%
+            </el-tag>
+          </div>
+          <div class="source-snippet">{{ s.snippet }}</div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -29,6 +47,7 @@
 import { onBeforeUnmount, ref } from 'vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import { Loading } from '@element-plus/icons-vue'
 
 const question = ref('')
 const answer = ref('')
@@ -72,4 +91,60 @@ onBeforeUnmount(close)
 
 <style scoped>
 .chat-page { max-width: 860px; }
+.waiting-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #909399;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.stream-cursor {
+  display: inline-block;
+  color: var(--el-color-primary);
+  animation: blink 0.9s steps(1) infinite;
+  margin-left: 2px;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.sources-block { margin-top: 16px; }
+.sources-block h4 { margin: 0 0 8px; color: #606266; }
+.source-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.source-item:hover { background: #f5f7fa; border-color: var(--el-color-primary-light-5); }
+.source-index {
+  flex: none;
+  font-weight: 600;
+  color: var(--el-color-primary);
+  font-family: monospace;
+}
+.source-body { min-width: 0; }
+.source-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.source-title-text {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.source-score { flex: none; }
+.source-snippet {
+  color: #606266;
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 </style>

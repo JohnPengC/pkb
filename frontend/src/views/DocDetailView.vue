@@ -1,6 +1,6 @@
 <template>
   <div v-loading="loading">
-    <el-page-header @back="$router.push('/docs')">
+    <el-page-header @back="goBack">
       <template #content>
         <el-space>
           <span>{{ doc.title }}</span>
@@ -65,7 +65,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { MdEditor, MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -74,6 +74,7 @@ import {
 } from '../api/docs'
 
 const route = useRoute()
+const router = useRouter()
 const id = route.params.id
 
 const doc = ref({})
@@ -90,6 +91,15 @@ const sourceLink = computed(() =>
   doc.value.sourceLabel?.startsWith('http') ? doc.value.sourceLabel : null)
 
 const sign = (type) => ({ ADD: '+ ', DEL: '- ', KEEP: '  ' }[type])
+
+/** 从问答等页面跳入时返回来源页；直接打开详情时回文档列表 */
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/docs')
+  }
+}
 
 async function load() {
   loading.value = true

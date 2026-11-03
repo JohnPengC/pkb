@@ -35,6 +35,10 @@ public class KnowledgeDocument {
     @Column(name = "status", nullable = false, length = 10)
     private DocStatus status = DocStatus.DRAFT;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "process_mode", nullable = false, length = 16)
+    private com.pkb.ingestion.ProcessMode processMode = com.pkb.ingestion.ProcessMode.DISTILL;
+
     @Column(name = "current_version", nullable = false)
     private int currentVersion = 1;
 

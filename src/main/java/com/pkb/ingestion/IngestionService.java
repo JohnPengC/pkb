@@ -44,6 +44,11 @@ public class IngestionService {
 
     @Transactional
     public ImportTask createFromFile(MultipartFile file) {
+        return createFromFile(file, ProcessMode.DISTILL);
+    }
+
+    @Transactional
+    public ImportTask createFromFile(MultipartFile file, ProcessMode mode) {
         String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
         String ext = extensionOf(original);
         if (!SUPPORTED_EXTENSIONS.contains(ext)) {
@@ -70,11 +75,16 @@ public class IngestionService {
         doc.setContentHash(hash);
         doc.setStoragePath(stored.toString());
         sourceRepository.save(doc);
-        return createAndLaunch(doc);
+        return createAndLaunch(doc, mode);
     }
 
     @Transactional
     public ImportTask createFromUrl(String url) {
+        return createFromUrl(url, ProcessMode.DISTILL);
+    }
+
+    @Transactional
+    public ImportTask createFromUrl(String url, ProcessMode mode) {
         if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) {
             throw new BizException("URL 不合法，请输入 http(s) 链接");
         }
@@ -91,7 +101,7 @@ public class IngestionService {
         doc.setContentHash(hash);
         doc.setStoragePath(stored.toString());
         sourceRepository.save(doc);
-        return createAndLaunch(doc);
+        return createAndLaunch(doc, mode);
     }
 
     public List<ImportTask> listTasks() {
@@ -132,9 +142,10 @@ public class IngestionService {
         }
     }
 
-    private ImportTask createAndLaunch(SourceDocument doc) {
+    private ImportTask createAndLaunch(SourceDocument doc, ProcessMode mode) {
         ImportTask task = new ImportTask();
         task.setSourceDocument(doc);
+        task.setProcessMode(mode);
         taskRepository.save(task);
         launchAfterCommit(task.getId());
         return task;

@@ -90,6 +90,39 @@ class IndexServiceTest extends AbstractIntegrationTest {
         assertThat(types).contains("DISTILLED", "RAW");
     }
 
+    @Test
+    void rawModeBuildsOnlyContentPool() throws Exception {
+        when(embeddingProvider.embedAll(anyList())).thenAnswer(inv -> {
+            List<String> texts = inv.getArgument(0);
+            return texts.stream().map(t -> fakeVector(texts.indexOf(t))).toList();
+        });
+        when(embeddingProvider.modelId()).thenReturn("test-embedding");
+
+        // 真实存在的源文件（RAW 模式虽跳过来源池，抽取器仍可能被调用于兜底，保持场景真实）
+        java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), "pkb-test-storage");
+        java.nio.file.Files.createDirectories(dir);
+        java.nio.file.Path file = dir.resolve("raw-mode-" + System.nanoTime() + ".txt");
+        java.nio.file.Files.writeString(file, "RAW 模式原文内容。".repeat(10));
+
+        SourceDocument source = new SourceDocument();
+        source.setSourceType(SourceType.FILE);
+        source.setFileName(file.getFileName().toString());
+        source.setContentHash(HashUtil.sha256(file.toString()));
+        source.setStoragePath(file.toString());
+        source = sourceRepository.save(source);
+
+        KnowledgeDocument doc = knowledgeService.createDraft(source,
+                new DistilledDraft("标题", "摘要", "RAW 模式正文内容。".repeat(50)),
+                com.pkb.ingestion.ProcessMode.RAW);
+        indexService.reindex(doc.getId());
+
+        var types = chunkRepository.vectorSearch(fakeVector(0), 50, false).stream()
+                .filter(r -> r.documentId().equals(doc.getId()))
+                .map(ChunkRow::chunkType)
+                .collect(java.util.stream.Collectors.toSet());
+        assertThat(types).containsExactly("DISTILLED");
+    }
+
     private float[] fakeVector(int seed) {
         float[] v = new float[1024];
         v[seed % 1024] = 1.0f;

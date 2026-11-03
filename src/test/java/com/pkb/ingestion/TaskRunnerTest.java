@@ -52,6 +52,28 @@ class TaskRunnerTest extends AbstractIntegrationTest {
         assertThat(failed.getErrorMessage()).contains("模型超时");
     }
 
+    @Test
+    void rawModeSkipsDistillationAndKeepsVerbatimText() throws Exception {
+        SourceDocument doc = newFileSource("runner-raw.txt", "原文逐字内容：甲、乙、丙。");
+        ImportTask task = newTask(doc);
+        task.setProcessMode(ProcessMode.RAW);
+        taskRepository.save(task);
+
+        taskRunner.run(task.getId());
+
+        ImportTask done = taskRepository.findById(task.getId()).orElseThrow();
+        assertThat(done.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        var knowledgeDoc = knowledgeDocumentRepository.findBySourceDocumentId(doc.getId()).orElseThrow();
+        assertThat(knowledgeDoc.getProcessMode()).isEqualTo(ProcessMode.RAW);
+        assertThat(knowledgeDoc.getTitle()).isEqualTo("runner-raw.txt");
+        assertThat(knowledgeDoc.getContent()).contains("原文逐字内容：甲、乙、丙。");
+        org.mockito.Mockito.verify(distillationService, org.mockito.Mockito.never())
+                .distill(anyString(), anyString());
+    }
+
+    @Autowired
+    com.pkb.knowledge.KnowledgeDocumentRepository knowledgeDocumentRepository;
+
     private SourceDocument newFileSource(String name, String content) throws Exception {
         java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), "pkb-test-storage");
         java.nio.file.Files.createDirectories(dir);

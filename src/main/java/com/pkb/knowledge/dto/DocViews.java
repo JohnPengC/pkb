@@ -17,7 +17,7 @@ public final class DocViews {
 
     public record DocDetail(UUID id, String title, String summary, String content, String status,
                             int currentVersion, String sourceLabel, String updatedAt,
-                            java.util.List<String> tags) {
+                            java.util.List<String> tags, String processMode) {
         public static DocDetail from(KnowledgeDocument d) {
             return from(d, java.util.List.of());
         }
@@ -28,7 +28,8 @@ public final class DocViews {
                     ? src.getFileName() : src.getUrl();
             return new DocDetail(d.getId(), d.getTitle(), d.getSummary(), d.getContent(),
                     d.getStatus().name(), d.getCurrentVersion(), label, d.getUpdatedAt().toString(),
-                    tags == null ? java.util.List.of() : tags);
+                    tags == null ? java.util.List.of() : tags,
+                    d.getProcessMode() == null ? "DISTILL" : d.getProcessMode().name());
         }
     }
 

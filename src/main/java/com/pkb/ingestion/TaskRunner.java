@@ -59,17 +59,36 @@ public class TaskRunner {
                 ? textExtractor.extract(stored)
                 : urlFetcher.extract(stored);
 
-        task.markStatus(TaskStatus.DISTILLING);
-        taskRepository.save(task);
-
         String hint = source.getSourceType() == SourceType.FILE ? source.getFileName() : source.getUrl();
-        DistilledDraft draft = distillationService.distill(rawText, hint);
+
+        // 处理方式：AI 提炼生成结构化知识文档；或仅转 Markdown（原文即文档，零损耗零 LLM 调用）
+        DistilledDraft draft;
+        if (task.getProcessMode() == ProcessMode.RAW) {
+            draft = new DistilledDraft(rawTitle(hint, rawText), "", rawText);
+        } else {
+            task.markStatus(TaskStatus.DISTILLING);
+            taskRepository.save(task);
+            draft = distillationService.distill(rawText, hint);
+        }
 
         // createDraft 内部发布 DocumentSavedEvent 触发首次向量化（加入当前事务）
-        transactionTemplate.executeWithoutResult(tx -> knowledgeService.createDraft(source, draft));
+        transactionTemplate.executeWithoutResult(
+                tx -> knowledgeService.createDraft(source, draft, task.getProcessMode()));
 
         task.markStatus(TaskStatus.COMPLETED);
         taskRepository.save(task);
+    }
+
+    /** URL 抽取结果以 "# 标题" 开头时取其为标题；否则回退文件名/URL。 */
+    private String rawTitle(String hint, String rawText) {
+        if (rawText.startsWith("# ")) {
+            int nl = rawText.indexOf('\n');
+            String title = rawText.substring(2, nl < 0 ? rawText.length() : nl).strip();
+            if (!title.isEmpty()) {
+                return title;
+            }
+        }
+        return hint;
     }
 
     private void markAttemptFailed(UUID taskId, int attempt, String message) {

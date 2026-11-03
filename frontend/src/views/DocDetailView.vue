@@ -8,6 +8,7 @@
             {{ doc.status === 'CONFIRMED' ? '已确认' : '草稿' }}
           </el-tag>
           <el-tag size="small" effect="plain">v{{ doc.currentVersion }}</el-tag>
+          <el-tag v-if="doc.processMode === 'RAW'" size="small" type="warning" effect="plain">仅转换</el-tag>
         </el-space>
       </template>
       <template #extra>

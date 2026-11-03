@@ -16,13 +16,26 @@ public class IngestionController {
     private final IngestionService ingestionService;
 
     @PostMapping("/file")
-    public TaskView upload(@RequestParam("file") MultipartFile file) {
-        return TaskView.from(ingestionService.createFromFile(file));
+    public TaskView upload(@RequestParam("file") MultipartFile file,
+                           @RequestParam(required = false) String mode) {
+        return TaskView.from(ingestionService.createFromFile(file, parseMode(mode)));
     }
 
     @PostMapping("/url")
     public TaskView submitUrl(@RequestBody Map<String, String> body) {
-        return TaskView.from(ingestionService.createFromUrl(body.get("url")));
+        return TaskView.from(ingestionService.createFromUrl(body.get("url"), parseMode(body.get("mode"))));
+    }
+
+    /** 缺省 AI 提炼；大小写不敏感；非法值返回中文 400。 */
+    private static ProcessMode parseMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return ProcessMode.DISTILL;
+        }
+        try {
+            return ProcessMode.valueOf(mode.strip().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new com.pkb.common.error.BizException("不合法的处理方式：" + mode + "（可选 DISTILL / RAW）");
+        }
     }
 
     @GetMapping("/tasks")

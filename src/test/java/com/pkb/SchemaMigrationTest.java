@@ -37,5 +37,14 @@ class SchemaMigrationTest extends AbstractIntegrationTest {
                         + "WHERE table_name = 'document_chunk' AND column_name = 'chunk_type'",
                 String.class);
         assertThat(chunkType).isEqualTo("chunk_type");
+
+        // V3：导入处理方式（AI 提炼 / 仅转 Markdown）
+        for (String table : new String[]{"import_task", "knowledge_document"}) {
+            String processMode = jdbc.queryForObject(
+                    "SELECT column_name FROM information_schema.columns "
+                            + "WHERE table_name = '" + table + "' AND column_name = 'process_mode'",
+                    String.class);
+            assertThat(processMode).isEqualTo("process_mode");
+        }
     }
 }

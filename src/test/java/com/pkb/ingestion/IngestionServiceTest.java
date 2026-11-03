@@ -106,4 +106,11 @@ class IngestionServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(BizException.class)
                 .hasMessageContaining("执行中");
     }
+
+    @Test
+    void createFromFileAcceptsProcessMode() {
+        var file = new MockMultipartFile("file", "mode.txt", "text/plain", "模式选择内容".getBytes());
+        ImportTask task = ingestionService.createFromFile(file, ProcessMode.RAW);
+        assertThat(task.getProcessMode()).isEqualTo(ProcessMode.RAW);
+    }
 }

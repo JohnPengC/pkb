@@ -1,6 +1,10 @@
 <template>
   <div>
     <h2>导入资料</h2>
+    <el-radio-group v-model="processMode" style="margin-bottom: 16px">
+      <el-radio-button value="DISTILL">AI 提炼（结构化知识文档）</el-radio-button>
+      <el-radio-button value="RAW">仅转 Markdown（原文入库）</el-radio-button>
+    </el-radio-group>
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card shadow="never">
@@ -53,6 +57,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteTask, listTasks, retryTask, submitUrl, uploadFile } from '../api/ingest'
 
 const url = ref('')
+const processMode = ref('DISTILL')
 const submitting = ref(false)
 const tasks = ref([])
 const loading = ref(false)
@@ -71,7 +76,7 @@ async function refresh() {
 }
 
 async function doUpload({ file }) {
-  await uploadFile(file)
+  await uploadFile(file, processMode.value)
   ElMessage.success('已提交导入任务')
   refresh()
 }
@@ -80,7 +85,7 @@ async function doSubmitUrl() {
   if (!url.value.trim()) return
   submitting.value = true
   try {
-    await submitUrl(url.value.trim())
+    await submitUrl(url.value.trim(), processMode.value)
     ElMessage.success('已提交导入任务')
     url.value = ''
     refresh()

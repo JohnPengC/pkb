@@ -25,6 +25,10 @@ public class ImportTask {
     @Column(name = "status", nullable = false, length = 20)
     private TaskStatus status = TaskStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "process_mode", nullable = false, length = 16)
+    private ProcessMode processMode = ProcessMode.DISTILL;
+
     @Column(name = "error_message", columnDefinition = "text")
     private String errorMessage;
 

@@ -56,7 +56,14 @@ public class IndexService {
         String modelId = embeddingProvider.modelId();
 
         int distilledCount = reindexDistilledPool(documentId, doc, modelId);
-        int rawCount = reindexRawPool(documentId, doc, modelId);
+        int rawCount;
+        if (doc.getProcessMode() == com.pkb.ingestion.ProcessMode.RAW) {
+            // RAW 模式正文即原文，来源池与内容池重复；仅清理历史遗留来源块
+            chunkRepository.deleteByDocumentIdAndChunkType(documentId, ChunkRepository.TYPE_RAW);
+            rawCount = 0;
+        } else {
+            rawCount = reindexRawPool(documentId, doc, modelId);
+        }
         log.info("文档 {} 重新向量化完成：提炼 {} 块，原文 {} 块", documentId, distilledCount, rawCount);
     }
 

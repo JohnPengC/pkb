@@ -36,8 +36,16 @@ public class KnowledgeService {
     /** 由提炼结果创建 v1 草稿，并触发首次向量化事件。 */
     @Transactional
     public KnowledgeDocument createDraft(SourceDocument source, DistilledDraft draft) {
+        return createDraft(source, draft, com.pkb.ingestion.ProcessMode.DISTILL);
+    }
+
+    /** 由提炼结果创建 v1 草稿（可指定导入处理方式），并触发首次向量化事件。 */
+    @Transactional
+    public KnowledgeDocument createDraft(SourceDocument source, DistilledDraft draft,
+                                         com.pkb.ingestion.ProcessMode processMode) {
         KnowledgeDocument doc = new KnowledgeDocument();
         doc.setSourceDocument(source);
+        doc.setProcessMode(processMode);
         doc.setTitle(draft.title());
         doc.setSummary(draft.summary());
         doc.setContent(draft.content());

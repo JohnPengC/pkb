@@ -1,13 +1,14 @@
 import { http } from './client'
 
-export function uploadFile(file) {
+export function uploadFile(file, mode = 'DISTILL') {
   const form = new FormData()
   form.append('file', file)
+  form.append('mode', mode)
   return http.post('/ingest/file', form)
 }
 
-export function submitUrl(url) {
-  return http.post('/ingest/url', { url })
+export function submitUrl(url, mode = 'DISTILL') {
+  return http.post('/ingest/url', { url, mode })
 }
 
 export function listTasks() {

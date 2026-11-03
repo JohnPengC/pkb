@@ -54,16 +54,49 @@ class RetrievalServiceTest extends AbstractIntegrationTest {
         awaitChunksExist(draft.getId());
         indexService.reindex(draft.getId());
 
+        // 测试类内多个用例共享一个库，断言只统计本用例的文档
         List<SearchHit> confirmedOnly = retrievalService.search("贷前审查", 5, false);
         assertThat(confirmedOnly).isEmpty();
 
-        List<SearchHit> withDraft = retrievalService.search("贷前审查", 5, true);
+        List<SearchHit> withDraft = retrievalService.search("贷前审查", 5, true).stream()
+                .filter(h -> h.documentId().equals(draft.getId())).toList();
         assertThat(withDraft).hasSize(1);
         assertThat(withDraft.get(0).title()).isEqualTo("草稿文档");
 
         knowledgeService.confirm(draft.getId());
-        List<SearchHit> afterConfirm = retrievalService.search("贷前审查", 5, false);
+        List<SearchHit> afterConfirm = retrievalService.search("贷前审查", 5, false).stream()
+                .filter(h -> h.documentId().equals(draft.getId())).toList();
         assertThat(afterConfirm).hasSize(1);
+    }
+
+    @Test
+    void rawPoolParticipatesInRetrieval() throws Exception {
+        when(embeddingProvider.embedAll(anyList())).thenAnswer(inv -> {
+            List<String> texts = inv.getArgument(0);
+            return texts.stream().map(RetrievalServiceTest::vectorOf).toList();
+        });
+        when(embeddingProvider.embed(anyString())).thenAnswer(inv -> vectorOf(inv.getArgument(0)));
+        when(embeddingProvider.modelId()).thenReturn("test-embedding");
+
+        // 真实源文件：raw 细节关键词只存在于原文，不在提炼文档里
+        java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), "pkb-test-storage");
+        java.nio.file.Files.createDirectories(dir);
+        java.nio.file.Path file = dir.resolve("rt-raw-" + System.nanoTime() + ".txt");
+        java.nio.file.Files.writeString(file, "材料清单与操作细则的原文细节描述。".repeat(10));
+
+        SourceDocument source = new SourceDocument();
+        source.setSourceType(SourceType.FILE);
+        source.setFileName(file.getFileName().toString());
+        source.setContentHash(HashUtil.sha256(file.toString()));
+        source.setStoragePath(file.toString());
+        source = sourceRepository.save(source);
+
+        KnowledgeDocument doc = knowledgeService.createDraft(source,
+                new DistilledDraft("审批文档", "摘要", "信贷审批流程说明。"));
+        indexService.reindex(doc.getId());
+
+        List<SearchHit> hits = retrievalService.search("材料清单", 5, true);
+        assertThat(hits).extracting(SearchHit::title).contains("审批文档");
     }
 
     /** 把文本映射为确定性向量：按内容哈希散布，保证同内容向量一致。 */

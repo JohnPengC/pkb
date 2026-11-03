@@ -45,15 +45,49 @@ class IndexServiceTest extends AbstractIntegrationTest {
                 new DistilledDraft("标题", "摘要", "## 一\n" + "第一段内容。".repeat(80) + "\n\n## 二\n" + "第二段内容。".repeat(80)));
 
         indexService.reindex(doc.getId());
-        var rows = chunkRepository.vectorSearch(fakeVector(0), 10, false);
+        var rows = chunkRepository.vectorSearch(fakeVector(0), 10, false).stream()
+                .filter(r -> r.documentId().equals(doc.getId())).toList();
         assertThat(rows).isNotEmpty();
-        assertThat(rows).allMatch(r -> r.documentId().equals(doc.getId()));
 
-        // 改内容后再重建，旧块应被替换
+        // 改内容后再重建，旧提炼块应被替换
         knowledgeService.save(doc.getId(), "## 全新\n完全不同的内容。", "重写");
         indexService.reindex(doc.getId());
-        var after = chunkRepository.vectorSearch(fakeVector(0), 10, false);
+        var after = chunkRepository.vectorSearch(fakeVector(0), 10, false).stream()
+                .filter(r -> r.documentId().equals(doc.getId()) && r.chunkType().equals("DISTILLED")).toList();
         assertThat(after).allMatch(r -> r.content().contains("全新") || r.content().contains("完全不同"));
+    }
+
+    @Test
+    void reindexBuildsDistilledAndRawPools() throws Exception {
+        when(embeddingProvider.embedAll(anyList())).thenAnswer(inv -> {
+            List<String> texts = inv.getArgument(0);
+            return texts.stream().map(t -> fakeVector(texts.indexOf(t))).toList();
+        });
+        when(embeddingProvider.modelId()).thenReturn("test-embedding");
+
+        // 真实存在的源文件（原文池重新抽取的前提）
+        java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), "pkb-test-storage");
+        java.nio.file.Files.createDirectories(dir);
+        java.nio.file.Path file = dir.resolve("raw-pool-" + System.nanoTime() + ".txt");
+        java.nio.file.Files.writeString(file, "原文细节内容：第一段。".repeat(40));
+
+        SourceDocument source = new SourceDocument();
+        source.setSourceType(SourceType.FILE);
+        source.setFileName(file.getFileName().toString());
+        source.setContentHash(HashUtil.sha256(file.toString()));
+        source.setStoragePath(file.toString());
+        source = sourceRepository.save(source);
+
+        KnowledgeDocument doc = knowledgeService.createDraft(source,
+                new DistilledDraft("标题", "摘要", "## 一\n" + "提炼段落内容。".repeat(100)));
+
+        indexService.reindex(doc.getId());
+
+        var types = chunkRepository.vectorSearch(fakeVector(0), 50, false).stream()
+                .filter(r -> r.documentId().equals(doc.getId()))
+                .map(ChunkRow::chunkType)
+                .collect(java.util.stream.Collectors.toSet());
+        assertThat(types).contains("DISTILLED", "RAW");
     }
 
     private float[] fakeVector(int seed) {

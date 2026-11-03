@@ -30,5 +30,12 @@ class SchemaMigrationTest extends AbstractIntegrationTest {
                 Integer.class);
         // pgvector 把维度存为 atttypmod
         assertThat(dim).isEqualTo(1024);
+
+        // V2：原文旁路索引（提炼块 / 原文块）
+        String chunkType = jdbc.queryForObject(
+                "SELECT column_name FROM information_schema.columns "
+                        + "WHERE table_name = 'document_chunk' AND column_name = 'chunk_type'",
+                String.class);
+        assertThat(chunkType).isEqualTo("chunk_type");
     }
 }

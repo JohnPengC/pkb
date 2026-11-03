@@ -11,23 +11,27 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChunkRepository {
 
+    public static final String TYPE_DISTILLED = "DISTILLED";
+    public static final String TYPE_RAW = "RAW";
+
     private final JdbcTemplate jdbc;
 
-    public void deleteByDocumentId(UUID documentId) {
-        jdbc.update("DELETE FROM document_chunk WHERE document_id = ?", documentId);
+    public void deleteByDocumentIdAndChunkType(UUID documentId, String chunkType) {
+        jdbc.update("DELETE FROM document_chunk WHERE document_id = ? AND chunk_type = ?", documentId, chunkType);
     }
 
-    public void insertChunks(UUID documentId, List<String> contents, List<float[]> vectors, String modelId) {
-        String sql = "INSERT INTO document_chunk (document_id, chunk_index, content, embedding, embedding_model) "
-                + "VALUES (?, ?, ?, ?::vector, ?)";
+    public void insertChunks(UUID documentId, List<String> contents, List<float[]> vectors,
+                             String modelId, String chunkType) {
+        String sql = "INSERT INTO document_chunk (document_id, chunk_index, content, embedding, embedding_model, chunk_type) "
+                + "VALUES (?, ?, ?, ?::vector, ?, ?)";
         for (int i = 0; i < contents.size(); i++) {
-            jdbc.update(sql, documentId, i, contents.get(i), toVectorLiteral(vectors.get(i)), modelId);
+            jdbc.update(sql, documentId, i, contents.get(i), toVectorLiteral(vectors.get(i)), modelId, chunkType);
         }
     }
 
     public List<ChunkRow> vectorSearch(float[] queryVector, int limit, boolean confirmedOnly) {
         String sql = """
-                SELECT c.id, c.document_id, c.content, (c.embedding <=> ?::vector) AS distance
+                SELECT c.id, c.document_id, c.content, c.chunk_type, (c.embedding <=> ?::vector) AS distance
                 FROM document_chunk c
                 JOIN knowledge_document d ON d.id = c.document_id
                 %s
@@ -38,12 +42,13 @@ public class ChunkRepository {
                 UUID.fromString(rs.getString("id")),
                 UUID.fromString(rs.getString("document_id")),
                 rs.getString("content"),
-                rs.getDouble("distance")), toVectorLiteral(queryVector), toVectorLiteral(queryVector), limit);
+                rs.getDouble("distance"),
+                rs.getString("chunk_type")), toVectorLiteral(queryVector), toVectorLiteral(queryVector), limit);
     }
 
     public List<ChunkRow> keywordSearch(String keyword, int limit, boolean confirmedOnly) {
         String sql = """
-                SELECT c.id, c.document_id, c.content, 0.5 AS distance
+                SELECT c.id, c.document_id, c.content, c.chunk_type, 0.5 AS distance
                 FROM document_chunk c
                 JOIN knowledge_document d ON d.id = c.document_id
                 WHERE c.content ILIKE '%%' || ? || '%%'
@@ -54,7 +59,8 @@ public class ChunkRepository {
                 UUID.fromString(rs.getString("id")),
                 UUID.fromString(rs.getString("document_id")),
                 rs.getString("content"),
-                rs.getDouble("distance")), keyword, limit);
+                rs.getDouble("distance"),
+                rs.getString("chunk_type")), keyword, limit);
     }
 
     /** 返回库中实际使用的 embedding 模型标识（无数据返回 null）。 */

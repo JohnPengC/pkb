@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +47,31 @@ public class RetrievalService {
                     (a, b) -> a.score() >= b.score() ? a : b);
         }
 
-        List<Scored> top = merged.values().stream()
+        List<Scored> sorted = merged.values().stream()
                 .sorted(Comparator.comparingDouble(Scored::score).reversed())
-                .limit(topK)
                 .toList();
+
+        // 双索引配比：提炼块与原文块各保至少 quota 个（结构 + 细节），其余名额按分补齐
+        int quota = Math.max(1, topK / 2);
+        List<Scored> top = new ArrayList<>();
+        Map<String, Integer> typeCount = new HashMap<>();
+        for (Scored s : sorted) {
+            if (top.size() >= Math.min(topK, 2 * quota)) {
+                break;
+            }
+            int seen = typeCount.merge(s.row().chunkType(), 1, Integer::sum);
+            if (seen <= quota) {
+                top.add(s);
+            }
+        }
+        for (Scored s : sorted) {
+            if (top.size() >= topK) {
+                break;
+            }
+            if (!top.contains(s)) {
+                top.add(s);
+            }
+        }
 
         Map<UUID, String> titles = documentRepository.findAllById(
                         top.stream().map(s -> s.row().documentId()).collect(Collectors.toSet()))

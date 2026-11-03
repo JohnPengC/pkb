@@ -29,8 +29,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class IngestionService {
 
-    private static final Set<String> SUPPORTED_EXTENSIONS =
-            Set.of("docx", "pdf", "pptx", "xlsx", "csv", "txt", "md");
+    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of(
+            // 文档
+            "docx", "pdf", "pptx", "xlsx", "xls", "csv", "txt", "md",
+            // 网页与数据
+            "html", "htm", "json", "xml",
+            // 图片（MarkItDown 提取 EXIF 等元数据）
+            "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff",
+            // 音频（markitdown[all] 经 faster-whisper 语音转写，CPU 较慢）
+            "mp3", "wav", "m4a", "flac");
     private static final long MAX_FILE_SIZE = 50L * 1024 * 1024;
 
     private final SourceDocumentRepository sourceRepository;
@@ -52,7 +59,9 @@ public class IngestionService {
         String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
         String ext = extensionOf(original);
         if (!SUPPORTED_EXTENSIONS.contains(ext)) {
-            throw new BizException("不支持的文件格式：" + ext + "，目前支持 docx/pdf/pptx/xlsx/csv/txt/md");
+            throw new BizException("不支持的文件格式：" + ext
+                    + "，目前支持文档（docx/pdf/pptx/xlsx/xls/csv/txt/md/html/json/xml）、"
+                    + "图片（jpg/png/gif/webp/bmp/tiff）与音频（mp3/wav/m4a/flac）");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new BizException("文件超过 50MB 上限");

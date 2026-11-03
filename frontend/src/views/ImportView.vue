@@ -8,11 +8,25 @@
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header>上传文件（docx / pdf / pptx / xlsx / csv / txt / md，≤50MB）</template>
-          <el-upload drag :show-file-list="false" :http-request="doUpload" accept=".docx,.pdf,.pptx,.xlsx,.csv,.txt,.md">
+          <template #header>上传文件（文档 / 图片 / 音频，单个 ≤50MB，支持多选与文件夹）</template>
+          <el-upload drag multiple :auto-upload="false" v-model:file-list="fileList"
+                     accept=".docx,.pdf,.pptx,.xlsx,.xls,.csv,.txt,.md,.html,.htm,.json,.xml,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.mp3,.wav,.m4a,.flac">
             <el-icon size="40"><UploadFilled /></el-icon>
-            <div>拖拽文件到此处，或点击选择</div>
+            <div>拖拽一个或多个文件到此处，或点击选择</div>
           </el-upload>
+          <el-space style="margin-top: 10px" wrap>
+            <el-button type="primary" :disabled="!fileList.length" :loading="uploading"
+                       @click="doBatchUpload(fileList.map((f) => ({ name: f.name, raw: f.raw })))">
+              上传 {{ fileList.length }} 个文件
+            </el-button>
+            <el-button :loading="uploading" @click="pickDirectory">选择文件夹上传</el-button>
+            <el-button v-if="fileList.length" @click="fileList = []">清空</el-button>
+          </el-space>
+          <input ref="dirInput" type="file" webkitdirectory multiple style="display: none"
+                 @change="onDirectoryPicked" />
+          <div style="margin-top: 8px; color: #909399; font-size: 12px">
+            提示：图片仅提取 EXIF 等元数据（图中文字需 OCR）；音频经语音转写，CPU 上较慢
+          </div>
         </el-card>
       </el-col>
       <el-col :span="12">
@@ -61,6 +75,9 @@ const processMode = ref('DISTILL')
 const submitting = ref(false)
 const tasks = ref([])
 const loading = ref(false)
+const fileList = ref([])
+const uploading = ref(false)
+const dirInput = ref(null)
 let timer = null
 
 const STATUS_TEXT = {
@@ -75,10 +92,40 @@ async function refresh() {
   tasks.value = await listTasks()
 }
 
-async function doUpload({ file }) {
-  await uploadFile(file, processMode.value)
-  ElMessage.success('已提交导入任务')
+/** 批量上传（多选文件与目录选择共用）：逐个提交，汇总成功/失败，失败明细最多展示 3 条。 */
+async function doBatchUpload(items) {
+  if (!items.length || uploading.value) return
+  uploading.value = true
+  let ok = 0
+  const errors = []
+  for (const item of items) {
+    try {
+      await uploadFile(item.raw, processMode.value, { silent: true })
+      ok++
+    } catch (e) {
+      errors.push(`${item.name}：${e.message}`)
+    }
+  }
+  uploading.value = false
+  fileList.value = []
+  if (errors.length === 0) {
+    ElMessage.success(`已提交 ${ok} 个导入任务`)
+  } else {
+    const detail = errors.slice(0, 3).join('；') + (errors.length > 3 ? ` 等 ${errors.length} 个失败` : '')
+    ElMessage.warning(`已提交 ${ok} 个，失败 ${errors.length} 个（${detail}）`)
+  }
   refresh()
+}
+
+function pickDirectory() {
+  dirInput.value?.click()
+}
+
+function onDirectoryPicked(e) {
+  const files = Array.from(e.target.files || [])
+  e.target.value = ''
+  if (!files.length) return
+  doBatchUpload(files.map((f) => ({ name: f.webkitRelativePath || f.name, raw: f })))
 }
 
 async function doSubmitUrl() {

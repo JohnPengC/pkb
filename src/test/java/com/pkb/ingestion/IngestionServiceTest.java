@@ -62,7 +62,7 @@ class IngestionServiceTest extends AbstractIntegrationTest {
 
     @Test
     void acceptsStructuredFormats() {
-        for (String name : new String[]{"d.pptx", "e.xlsx", "f.csv"}) {
+        for (String name : new String[]{"d.pptx", "e.xlsx", "f.csv", "g.json", "h.html", "i.png"}) {
             var file = new MockMultipartFile("file", name, "application/octet-stream",
                     ("内容-" + name).getBytes());
             ImportTask task = ingestionService.createFromFile(file);

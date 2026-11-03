@@ -1,10 +1,10 @@
 import { http } from './client'
 
-export function uploadFile(file, mode = 'DISTILL') {
+export function uploadFile(file, mode = 'DISTILL', opts = {}) {
   const form = new FormData()
   form.append('file', file)
   form.append('mode', mode)
-  return http.post('/ingest/file', form)
+  return http.post('/ingest/file', form, { silent: !!opts.silent })
 }
 
 export function submitUrl(url, mode = 'DISTILL') {

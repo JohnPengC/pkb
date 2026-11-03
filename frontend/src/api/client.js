@@ -7,7 +7,9 @@ http.interceptors.response.use(
   (resp) => resp,
   (err) => {
     const message = err.response?.data?.message || '请求失败，请稍后重试'
-    ElMessage.error(message)
+    if (!err.config?.silent) {
+      ElMessage.error(message)
+    }
     return Promise.reject(new Error(message))
   }
 )

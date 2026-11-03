@@ -3,6 +3,9 @@ package com.pkb.knowledge;
 import com.pkb.common.error.BizException;
 import com.pkb.distillation.DistilledDraft;
 import com.pkb.ingestion.SourceDocument;
+import com.pkb.ingestion.SourceType;
+import com.pkb.ingestion.TextExtractor;
+import com.pkb.ingestion.UrlFetcher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -10,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +26,12 @@ public class KnowledgeService {
     private final VersionRepository versionRepository;
     private final TagRepository tagRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final TextExtractor textExtractor;
+    private final UrlFetcher urlFetcher;
+
+    /** 原文只读视图：按来源类型从磁盘重新抽取，不额外存储。 */
+    public record SourceText(String content, String sourceLabel, String sourceType) {
+    }
 
     /** 由提炼结果创建 v1 草稿，并触发首次向量化事件。 */
     @Transactional
@@ -127,5 +137,18 @@ public class KnowledgeService {
         versionRepository.deleteByDocumentId(id);
         documentRepository.deleteById(id);
         // document_chunk / document_tag 由外键 ON DELETE CASCADE 清理
+    }
+
+    /** 查看原文（只读）：FILE 来源走文本抽取（MarkItDown 优先），URL 来源走正文提取。 */
+    @Transactional(readOnly = true)
+    public SourceText getSourceText(UUID id) {
+        KnowledgeDocument doc = get(id);
+        SourceDocument source = doc.getSourceDocument();
+        String text = source.getSourceType() == SourceType.FILE
+                ? textExtractor.extract(Path.of(source.getStoragePath()))
+                : urlFetcher.extract(Path.of(source.getStoragePath()));
+        String label = source.getSourceType() == SourceType.FILE
+                ? source.getFileName() : source.getUrl();
+        return new SourceText(text, label, source.getSourceType().name());
     }
 }

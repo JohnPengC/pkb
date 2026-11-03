@@ -5,8 +5,7 @@ import com.pkb.distillation.DistilledDraft;
 import com.pkb.ingestion.HashUtil;
 import com.pkb.ingestion.SourceDocument;
 import com.pkb.ingestion.SourceDocumentRepository;
-import com.pkb.ingestion.SourceType;
-import org.junit.jupiter.api.Test;
+import com.pkb.ingestion.SourceType;import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +76,29 @@ class KnowledgeServiceTest extends AbstractIntegrationTest {
         var after = knowledgeService.list(null, "待删", null,
                 org.springframework.data.domain.PageRequest.of(0, 10));
         assertThat(after.getContent()).isEmpty();
+    }
+
+    @Test
+    void getSourceTextExtractsFromStorage() throws Exception {
+        java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), "pkb-test-storage");
+        java.nio.file.Files.createDirectories(dir);
+        java.nio.file.Path file = dir.resolve("src-ro-" + System.nanoTime() + ".txt");
+        java.nio.file.Files.writeString(file, "原文只读查看测试内容");
+
+        SourceDocument source = new SourceDocument();
+        source.setSourceType(SourceType.FILE);
+        source.setFileName(file.getFileName().toString());
+        source.setContentHash(com.pkb.ingestion.HashUtil.sha256(file.toString()));
+        source.setStoragePath(file.toString());
+        source = sourceRepository.save(source);
+
+        KnowledgeDocument doc = knowledgeService.createDraft(source,
+                new DistilledDraft("标题", "摘要", "提炼内容"));
+
+        var st = knowledgeService.getSourceText(doc.getId());
+        assertThat(st.content()).contains("原文只读查看测试内容");
+        assertThat(st.sourceLabel()).isEqualTo(file.getFileName().toString());
+        assertThat(st.sourceType()).isEqualTo("FILE");
     }
 
     private SourceDocument newSource() {

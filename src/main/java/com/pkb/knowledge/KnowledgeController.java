@@ -3,6 +3,7 @@ package com.pkb.knowledge;
 import com.pkb.knowledge.dto.DocViews.DocDetail;
 import com.pkb.knowledge.dto.DocViews.DocSummary;
 import com.pkb.knowledge.dto.DocViews.VersionView;
+import com.pkb.knowledge.KnowledgeService.SourceText;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +45,11 @@ public class KnowledgeController {
     @PostMapping("/{id}/confirm")
     public DocDetail confirm(@PathVariable UUID id) {
         return toDetail(knowledgeService.confirm(id));
+    }
+
+    @GetMapping("/{id}/source")
+    public SourceText source(@PathVariable UUID id) {
+        return knowledgeService.getSourceText(id);
     }
 
     @GetMapping("/{id}/versions")

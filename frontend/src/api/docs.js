@@ -8,6 +8,10 @@ export function getDoc(id) {
   return http.get(`/docs/${id}`).then((r) => r.data)
 }
 
+export function getDocSource(id) {
+  return http.get(`/docs/${id}/source`).then((r) => r.data)
+}
+
 export function saveDoc(id, content, changeNote) {
   return http.put(`/docs/${id}`, { content, changeNote }).then((r) => r.data)
 }

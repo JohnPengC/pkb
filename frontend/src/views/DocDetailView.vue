@@ -19,6 +19,7 @@
             <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
           </template>
           <el-button @click="drawerVisible = true">版本历史</el-button>
+          <el-button @click="openSource">查看原文</el-button>
           <el-button type="danger" plain @click="doDelete">删除</el-button>
         </el-space>
       </template>
@@ -61,6 +62,16 @@
         </div>
       </div>
     </el-drawer>
+
+    <el-dialog v-model="sourceVisible" :title="`原文：${sourceText.sourceLabel || ''}`" width="70%"
+               top="6vh">
+      <el-alert type="info" :closable="false" show-icon
+                title="原文为只读视图，仅供对照纠错，不可编辑" style="margin-bottom: 12px" />
+      <div v-loading="sourceLoading" class="source-view">
+        <MdPreview v-if="sourceText.content" :modelValue="sourceText.content" />
+        <el-empty v-else-if="!sourceLoading" description="原文内容为空" />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -71,7 +82,7 @@ import { MdEditor, MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  confirmDoc, deleteDoc, diffVersions, getDoc, listVersions, rollback, saveDoc, setTags
+  confirmDoc, deleteDoc, diffVersions, getDoc, getDocSource, listVersions, rollback, saveDoc, setTags
 } from '../api/docs'
 
 const route = useRoute()
@@ -110,6 +121,20 @@ async function load() {
     versions.value = await listVersions(id)
   } finally {
     loading.value = false
+  }
+}
+
+const sourceVisible = ref(false)
+const sourceLoading = ref(false)
+const sourceText = ref({ content: '', sourceLabel: '', sourceType: '' })
+
+async function openSource() {
+  sourceVisible.value = true
+  sourceLoading.value = true
+  try {
+    sourceText.value = await getDocSource(id)
+  } finally {
+    sourceLoading.value = false
   }
 }
 
@@ -187,4 +212,11 @@ onMounted(load)
 .diff-line.add { background: #e8f7e8; color: #256b25; }
 .diff-line.del { background: #fde8e8; color: #a82a2a; }
 .diff-sign { display: inline-block; width: 20px; color: #909399; }
+.source-view {
+  max-height: 68vh;
+  overflow: auto;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
 </style>

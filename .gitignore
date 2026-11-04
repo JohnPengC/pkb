@@ -9,4 +9,13 @@ target/
 storage/
 node_modules/
 frontend/dist/
+*.log
+
+# 本地配置与密钥：.env 系列只保留示例文件
 .env
+.env.*
+!.env.example
+
+# 本地 compose 覆盖文件（可能含个人环境变量）
+docker-compose.override.yml
+

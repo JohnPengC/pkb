@@ -5,16 +5,16 @@
 - [ ] 打开 http://localhost:8080 能看到前端界面
 
 ## 导入与提炼
-- [ ] 上传一个 < 50MB 的 docx：任务状态 排队中→解析中→提炼中→已完成，文档列表出现草稿
-- [ ] 带表格的 docx：提炼结果中表格结构保留（Markdown 表格），关键术语不缺漏
+- [x] 上传一个 < 50MB 的 docx：任务状态 排队中→解析中→提炼中→已完成，文档列表出现草稿
+- [x] 带表格的 docx：提炼结果中表格结构保留（Markdown 表格），关键术语不缺漏
 - [ ] 上传 xlsx 或 pptx：提炼成功，表格/条目结构保留为 Markdown
-- [ ] 上传相同文件：提示"该内容已导入过"，不产生重复
-- [ ] 多选或整个文件夹上传：批量提交，汇总提示成功/失败数；目录内重复内容正常拦截
+- [x] 上传相同文件：提示"该内容已导入过"，不产生重复
+- [x] 多选或整个文件夹上传：批量提交，汇总提示成功/失败数；目录内重复内容正常拦截
 - [ ] 上传图片/音频：图片提取 EXIF 元数据入库，音频语音转写（CPU 较慢）
-- [ ] 上传 .exe：提示"不支持的文件格式"
+- [x] 上传 .exe：提示"不支持的文件格式"
 - [ ] 导入一篇服务端渲染的文章 URL：生成以页面标题开头的草稿
-- [ ] 导入一个需要 JS 渲染的 SPA 页面：任务失败，错误信息可读，点"重试"按钮可再次执行
-- [ ] 超长文档（数万字 txt）：提炼结果为整合后的单篇文档而非截断内容
+- [x] 导入一个需要 JS 渲染的 SPA 页面：任务失败，错误信息可读，点"重试"按钮可再次执行
+- [x] 超长文档（数万字 txt）：提炼结果为整合后的单篇文档而非截断内容
 
 ## 编辑与版本
 - [ ] 草稿点"确认无误"→ 状态变已确认
@@ -32,10 +32,10 @@
 - [ ] 细节追问：仅原文措辞里才有的信息（数字、条件、例外）能准确回答，且引用命中原文块
 
 ## MCP
-- [ ] `claude mcp add --transport sse pkb http://localhost:8080/sse` 成功
+- [x] `claude mcp add --transport sse pkb http://localhost:8080/sse` 成功
 - [ ] 在 Claude Code 中让其"搜索我的知识库里的 XX"→ 实际调用了 search_knowledge 并返回结果
 
 ## 模型切换
-- [ ] `PUT /api/admin/model/chat` 切换 Chat 模型后，新问答使用新模型
-- [ ] .env 换 embedding 模型重启后：`GET /api/admin/model` 显示 `indexConsistent=false`
-- [ ] `POST /api/admin/reindex` 后恢复 `true`，检索仍正常
+- [x] `PUT /api/admin/model/chat` 切换 Chat 模型后，新问答使用新模型
+- [x] .env 换 embedding 模型重启后：`GET /api/admin/model` 显示 `indexConsistent=false`
+- [x] `POST /api/admin/reindex` 后恢复 `true`，检索仍正常

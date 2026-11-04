@@ -34,18 +34,19 @@ Java 17 · Spring Boot 3 · Spring AI (MCP Server) · PostgreSQL 16 + PGvector �
 ## 快速开始
 
 ```bash
-cp .env.example .env   # 填入你的模型 API key（默认 Kimi，可改任意 OpenAI 兼容端点）
-docker compose up -d --build
+cp .env.example .env   # 填入聊天模型的 API key（默认 Kimi）
+docker compose --profile local-llm up -d --build   # 含本地 Ollama（embedding 用 bge-m3）
+docker exec pkb-ollama ollama pull bge-m3
 # 打开 http://localhost:8080
 ```
 
-使用本地模型（Ollama）：
+说明：聊天模型走云端（Kimi 等 OpenAI 兼容端点）；**embedding 默认走本地 Ollama 的 bge-m3**（Kimi 没有 embeddings 接口，云端替代方案见 `.env.example` 注释）。bge-m3 拉取完成前导入的文档会提示向量化失败，拉取后点「模型切换」页的重建或调用 `POST /api/admin/reindex` 即可。
+
+聊天也本地化（可选，需另拉 qwen2.5:7b）：
 
 ```bash
-docker compose --profile local-llm up -d ollama
 docker exec -it pkb-ollama ollama pull qwen2.5:7b
-docker exec -it pkb-ollama ollama pull bge-m3
-# .env 中改用 .env.example 注释里的 Ollama 预设值，重启 app
+# .env 中把 CHAT_* 改为 .env.example 里的本地预设，重启 app
 ```
 
 ## MCP 挂载

@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- 项目根目录：`/Users/johnpeng/Code/pkb`（已 `git init`，设计文档与本计划已作为首次提交入库，直接开始 Task 1 的 Step 2）
+- 项目根目录：`/path/to/pkb`（已 `git init`，设计文档与本计划已作为首次提交入库，直接开始 Task 1 的 Step 2）
 - Java 17（`java -version` 确认）；Maven 3.9+；Node 20+；Docker 可用
 - Spring Boot `3.4.5`，spring-ai-bom `1.0.1`（执行时若依赖拉取失败，升级到当时最新 3.4.x / 1.0.x 并在 commit message 中注明）
 - 后端包名：`com.pkb`；后端端口 `8080`；前端 Vite 端口 `5173`（代理 `/api` → `8080`）
@@ -123,7 +123,7 @@ pkb/
 - [ ] **Step 1: 初始化仓库与目录**
 
 ```bash
-mkdir -p /Users/johnpeng/Code/pkb && cd /Users/johnpeng/Code/pkb
+mkdir -p /path/to/pkb && cd /path/to/pkb
 git init
 mkdir -p src/main/java/com/pkb src/main/resources/db/migration src/test/java/com/pkb src/test/resources/samples
 ```
@@ -399,13 +399,13 @@ class PkbApplicationTests {
 }
 ```
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -DskipTests=false`
+Run: `cd /path/to/pkb && mvn -q test -DskipTests=false`
 Expected: **FAIL** — 数据库连不上（Postgres 未启动），Flyway 报错。
 
 - [ ] **Step 6: 启动 Postgres，让测试通过**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 docker compose up -d postgres
 docker compose ps   # 等待 healthy
 mvn -q test
@@ -424,7 +424,7 @@ kill %1
 Expected health 输出包含 `"status":"UP"`（db 组件可能是 DOWN 直到 Task 2，这是预期）。
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "chore: project skeleton with compose postgres"
 ```
@@ -599,7 +599,7 @@ class SchemaMigrationTest extends AbstractIntegrationTest {
 }
 ```
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=SchemaMigrationTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=SchemaMigrationTest`
 Expected: **PASS**（Flyway 在测试启动时自动执行 V1）。同时重跑 `mvn -q test`：`PkbApplicationTests.contextLoads` 也应通过（本地 compose 的 postgres 在跑）。注意 `contextLoads` 是 `@SpringBootTest` 但未继承基类——修改它继承 `AbstractIntegrationTest`：
 
 ```java
@@ -613,7 +613,7 @@ class PkbApplicationTests extends AbstractIntegrationTest {
 - [ ] **Step 4: 提交**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: database schema via flyway V1"
 ```
@@ -994,13 +994,13 @@ class OpenAiCompatibleProviderTest {
 
 - [ ] **Step 4: 运行测试**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=OpenAiCompatibleProviderTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=OpenAiCompatibleProviderTest`
 Expected: 2 tests PASS
 
 - [ ] **Step 5: 提交**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: model provider abstraction with openai-compatible impl"
 ```
@@ -1541,13 +1541,13 @@ class IngestionServiceTest extends AbstractIntegrationTest {
 
 - [ ] **Step 4: 运行测试**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=IngestionServiceTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=IngestionServiceTest`
 Expected: 3 tests PASS
 
 - [ ] **Step 5: 提交**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: ingestion entities, dedup and task endpoints"
 ```
@@ -1754,11 +1754,11 @@ class UrlFetcherTest {
 
 - [ ] **Step 3: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest='TextExtractorTest,UrlFetcherTest'`
+Run: `cd /path/to/pkb && mvn -q test -Dtest='TextExtractorTest,UrlFetcherTest'`
 Expected: 3 tests PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: text extraction via tika and jsoup"
 ```
@@ -2056,11 +2056,11 @@ public class DistillationService {
 
 - [ ] **Step 4: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest='DraftParserTest,DistillationServiceTest'`
+Run: `cd /path/to/pkb && mvn -q test -Dtest='DraftParserTest,DistillationServiceTest'`
 Expected: 5 tests PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: distillation service with segment-aggregate for long text"
 ```
@@ -2446,11 +2446,11 @@ class TaskRunnerTest extends AbstractIntegrationTest {
 
 - [ ] **Step 4: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=TaskRunnerTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=TaskRunnerTest`
 Expected: 2 tests PASS（失败用例约 14 秒）
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: async task runner with retry and draft creation"
 ```
@@ -2925,11 +2925,11 @@ class KnowledgeServiceTest extends AbstractIntegrationTest {
 
 - [ ] **Step 5: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=KnowledgeServiceTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=KnowledgeServiceTest`
 Expected: 3 tests PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: knowledge document crud, versioning and tags"
 ```
@@ -3077,11 +3077,11 @@ public class DiffService {
 
 - [ ] **Step 3: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=DiffServiceTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=DiffServiceTest`
 Expected: 2 tests PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: version diff and rollback"
 ```
@@ -3488,11 +3488,11 @@ class IndexServiceTest extends AbstractIntegrationTest {
 
 - [ ] **Step 5: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest='ChunkingServiceTest,IndexServiceTest'`
+Run: `cd /path/to/pkb && mvn -q test -Dtest='ChunkingServiceTest,IndexServiceTest'`
 Expected: 4 tests PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: chunking and event-driven reindexing"
 ```
@@ -3722,11 +3722,11 @@ class RetrievalServiceTest extends AbstractIntegrationTest {
 
 - [ ] **Step 3: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=RetrievalServiceTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=RetrievalServiceTest`
 Expected: 1 test PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: hybrid retrieval with confirmed-only default"
 ```
@@ -3909,11 +3909,11 @@ class ReindexServiceTest extends AbstractIntegrationTest {
 
 - [ ] **Step 4: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=ReindexServiceTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=ReindexServiceTest`
 Expected: 1 test PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: model admin endpoints and full reindex"
 ```
@@ -4065,11 +4065,11 @@ public class ChatController {
 
 - [ ] **Step 2: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=ChatServiceTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=ChatServiceTest`
 Expected: 2 tests PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: rag chat with sse streaming and citations"
 ```
@@ -4234,7 +4234,7 @@ class KnowledgeMcpToolsTest {
 
 - [ ] **Step 4: 运行测试并验证端点**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=KnowledgeMcpToolsTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=KnowledgeMcpToolsTest`
 Expected: 2 tests PASS
 
 手动验证（应用启动后）：
@@ -4248,7 +4248,7 @@ Expected: 返回 SSE 连接（首行 `event:endpoint` 或类似），证明 MCP 
 - [ ] **Step 5: 提交**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: mcp server with knowledge tools"
 ```
@@ -4344,11 +4344,11 @@ class GlobalExceptionHandlerTest {
 
 - [ ] **Step 3: 运行测试并提交**
 
-Run: `cd /Users/johnpeng/Code/pkb && mvn -q test -Dtest=GlobalExceptionHandlerTest`
+Run: `cd /path/to/pkb && mvn -q test -Dtest=GlobalExceptionHandlerTest`
 Expected: 2 tests PASS
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: global error handling with readable messages"
 ```
@@ -4501,7 +4501,7 @@ http.interceptors.response.use(
 - [ ] **Step 3: 安装依赖并验证启动**
 
 ```bash
-cd /Users/johnpeng/Code/pkb/frontend
+cd /path/to/pkb/frontend
 npm install
 npm run dev &
 sleep 8 && curl -s http://localhost:5173/ | head -5
@@ -4533,7 +4533,7 @@ Expected: 返回 `index.html` 内容。浏览器访问 `http://localhost:5173` �
 - [ ] **Step 4: 提交**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: frontend skeleton with vue3 and element plus"
 ```
@@ -4691,7 +4691,7 @@ onBeforeUnmount(() => clearInterval(timer))
 - [ ] **Step 4: 提交**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: import page with upload, url and task polling"
 ```
@@ -5006,7 +5006,7 @@ onMounted(load)
 3. 点"回滚到此版" → 生成 v3，内容与 v1 一致
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: docs list and detail pages with version diff"
 ```
@@ -5108,7 +5108,7 @@ onBeforeUnmount(close)
 后端 + 前端运行下：提问一个知识库中有的主题 → 先出现引用来源卡片 → 回答逐字流出且带 [1] 引用标记 → 点击来源卡片跳转到文档详情。
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 git add -A
 git commit -m "feat: chat page with sse streaming and citations"
 ```
@@ -5297,7 +5297,7 @@ MIT
 # LICENSE
 MIT License
 
-Copyright (c) 2026 Peng Chuan
+Copyright (c) 2026 pkb contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -5359,7 +5359,7 @@ SOFTWARE.
 - [ ] **Step 4: 构建镜像并跑通完整 compose**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 cp .env.example .env   # 填入真实 key
 docker compose up -d --build
 docker compose ps      # postgres + app 都 healthy/running
@@ -5371,7 +5371,7 @@ Expected: `{"status":"UP"}`；浏览器打开 `http://localhost:8080` 进入前�
 - [ ] **Step 5: 全量测试 + 提交**
 
 ```bash
-cd /Users/johnpeng/Code/pkb
+cd /path/to/pkb
 mvn -q test
 git add -A
 git commit -m "chore: docker packaging, readme, license and e2e checklist"

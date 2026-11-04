@@ -33,7 +33,7 @@
 
 ## MCP
 - [x] `claude mcp add --transport sse pkb http://localhost:8080/sse` 成功
-- [ ] 在 Claude Code 中让其"搜索我的知识库里的 XX"→ 实际调用了 search_knowledge 并返回结果
+- [x] 在 Claude Code 中让其"搜索我的知识库里的 XX"→ 实际调用了 search_knowledge 并返回结果
 
 ## 模型切换
 - [x] `PUT /api/admin/model/chat` 切换 Chat 模型后，新问答使用新模型

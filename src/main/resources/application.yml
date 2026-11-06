@@ -39,6 +39,9 @@ pkb:
     enabled: ${MARKITDOWN_ENABLED:true}
     command: ${MARKITDOWN_COMMAND:markitdown}
     timeout-seconds: ${MARKITDOWN_TIMEOUT_SECONDS:120}
+  render:
+    # SPA 页面正文为空时的无头浏览器兜底（容器内置 Chromium 默认开；本地无浏览器默认关）
+    enabled: ${PKB_JS_RENDER:false}
   model:
     chat:
       base-url: ${CHAT_BASE_URL:https://api.moonshot.cn/v1}

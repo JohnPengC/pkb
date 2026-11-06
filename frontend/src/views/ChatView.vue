@@ -25,7 +25,7 @@
         <div v-if="m.sources.length" class="sources-block">
           <h4>引用来源（{{ m.sources.length }}）</h4>
           <div v-for="(s, j) in m.sources" :key="j" class="source-item"
-               @click="$router.push(`/docs/${s.documentId}`)">
+               @click="$router.push({ path: `/docs/${s.documentId}`, query: { q: s.evidence || '' } })">
             <span class="source-index">[{{ j + 1 }}]</span>
             <div class="source-body">
               <div class="source-title">

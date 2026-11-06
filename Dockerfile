@@ -21,6 +21,12 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=backend-build /build/target/pkb-0.1.0-SNAPSHOT.jar app.jar
 COPY --from=frontend-build /build/dist ./static
+# Playwright Chromium（SPA 页面无头渲染兜底）；本地开发无浏览器时应用自动降级为可读错误
+ENV PKB_JS_RENDER=true
+# 从 fat jar 抽出 playwright 三个 jar 调 CLI（BOOT-INF/lib 是归档内路径，不能直接进类路径）
+RUN python3 -c "import zipfile,re; z=zipfile.ZipFile('/app/app.jar'); [z.extract(n, '/tmp/pw') for n in z.namelist() if re.match(r'BOOT-INF/lib/(playwright|driver)', n)]" \
+ && java -cp '/tmp/pw/BOOT-INF/lib/*' com.microsoft.playwright.CLI install --with-deps chromium \
+ && rm -rf /tmp/pw
 ENV PKB_STORAGE_PATH=/data/storage
 VOLUME /data
 EXPOSE 8080

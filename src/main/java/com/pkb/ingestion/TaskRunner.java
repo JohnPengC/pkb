@@ -1,5 +1,6 @@
 package com.pkb.ingestion;
 
+import com.pkb.common.error.BizException;
 import com.pkb.distillation.DistillationService;
 import com.pkb.distillation.DistilledDraft;
 import com.pkb.knowledge.KnowledgeService;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.UUID;
 
@@ -20,8 +22,10 @@ public class TaskRunner {
     private static final long[] BACKOFF_MS = {2_000, 4_000, 8_000};
 
     private final ImportTaskRepository taskRepository;
+    private final SourceDocumentRepository sourceRepository;
     private final TextExtractor textExtractor;
     private final UrlFetcher urlFetcher;
+    private final JsRenderer jsRenderer;
     private final DistillationService distillationService;
     private final KnowledgeService knowledgeService;
     private final TransactionTemplate transactionTemplate;
@@ -55,9 +59,31 @@ public class TaskRunner {
         taskRepository.save(task);
 
         Path stored = Path.of(source.getStoragePath());
-        String rawText = source.getSourceType() == SourceType.FILE
-                ? textExtractor.extract(stored)
-                : urlFetcher.extract(stored);
+        String rawText;
+        if (source.getSourceType() == SourceType.FILE) {
+            rawText = textExtractor.extract(stored);
+        } else {
+            try {
+                rawText = urlFetcher.extract(stored);
+            } catch (BizException e) {
+                // SPA 页面正文为空：无头浏览器渲染兜底，渲染结果落盘替换存储
+                rawText = jsRenderer.render(source.getUrl())
+                        .map(html -> {
+                            try {
+                                Path rendered = stored.resolveSibling(
+                                        java.util.UUID.randomUUID() + ".rendered.html");
+                                java.nio.file.Files.writeString(rendered, html);
+                                java.nio.file.Files.deleteIfExists(stored);
+                                source.setStoragePath(rendered.toString());
+                                sourceRepository.save(source);
+                                return urlFetcher.extract(rendered);
+                            } catch (java.io.IOException io) {
+                                throw new UncheckedIOException(io);
+                            }
+                        })
+                        .orElseThrow(() -> e);
+            }
+        }
 
         String hint = source.getSourceType() == SourceType.FILE ? source.getFileName() : source.getUrl();
 

@@ -22,6 +22,8 @@ class TaskRunnerTest extends AbstractIntegrationTest {
 
     @MockitoBean
     DistillationService distillationService;
+    @MockitoBean
+    JsRenderer jsRenderer;
 
     @Test
     void completesTaskAndCreatesDraft() throws Exception {
@@ -50,6 +52,44 @@ class TaskRunnerTest extends AbstractIntegrationTest {
         assertThat(failed.getStatus()).isEqualTo(TaskStatus.FAILED);
         assertThat(failed.getRetryCount()).isEqualTo(3);
         assertThat(failed.getErrorMessage()).contains("模型超时");
+    }
+
+    @Test
+    void spaPageFallsBackToJsRenderer() throws Exception {
+        java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), "pkb-test-storage");
+        java.nio.file.Files.createDirectories(dir);
+        java.nio.file.Path shell = dir.resolve("spa-shell-" + System.nanoTime() + ".html");
+        java.nio.file.Files.writeString(shell,
+                "<html><head><title>SPA</title></head><body><div id=\"app\"></div>"
+                        + "<script>render()</script></body></html>");
+
+        SourceDocument source = new SourceDocument();
+        source.setSourceType(SourceType.URL);
+        source.setUrl("http://localhost/spa");
+        source.setContentHash(HashUtil.sha256("spa-" + System.nanoTime()));
+        source.setStoragePath(shell.toString());
+        source = sourceRepository.save(source);
+
+        ImportTask task = newTask(source);
+        when(distillationService.distill(anyString(), anyString()))
+                .thenReturn(new DistilledDraft("SPA 标题", "摘要", "正文"));
+        when(jsRenderer.render("http://localhost/spa")).thenAnswer(inv -> {
+            java.nio.file.Path rendered = dir.resolve("spa-rendered-" + System.nanoTime() + ".html");
+            java.nio.file.Files.writeString(rendered,
+                    "<html><head><title>SPA 渲染结果</title></head><body>"
+                            + "<article><h1>渲染出的正文标题</h1><p>这是 JS 渲染后的正文内容。</p></article>"
+                            + "</body></html>");
+            return java.util.Optional.of(java.nio.file.Files.readString(rendered));
+        });
+
+        taskRunner.run(task.getId());
+
+        ImportTask done = taskRepository.findById(task.getId()).orElseThrow();
+        assertThat(done.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        var knowledgeDoc = knowledgeDocumentRepository.findBySourceDocumentId(source.getId()).orElseThrow();
+        assertThat(knowledgeDoc.getContent()).contains("正文");
+        assertThat(sourceRepository.findById(source.getId()).orElseThrow().getStoragePath())
+                .endsWith(".rendered.html");
     }
 
     @Test

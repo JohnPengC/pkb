@@ -30,6 +30,9 @@
       来源：<el-link :href="sourceLink" target="_blank" type="info">{{ doc.sourceLabel }}</el-link>
     </div>
 
+    <el-alert v-if="highlightText" type="warning" :closable="true" class="hl-banner"
+              :title="`问答引用：“${highlightText}”已定位高亮`" />
+
     <el-space style="margin-bottom: 12px" wrap>
       <el-select v-model="docTags" multiple filterable allow-create default-first-option
                  placeholder="添加标签" style="width: 360px" @change="doSetTags" />
@@ -99,6 +102,38 @@ const saving = ref(false)
 const loading = ref(false)
 const drawerVisible = ref(false)
 const draftContent = ref('')
+// 从问答引用跳入时的证据句（路由 ?q=），用于定位高亮
+const highlightText = typeof route.query.q === 'string' ? route.query.q : ''
+
+async function load() {
+  loading.value = true
+  try {
+    doc.value = await getDoc(id)
+    docTags.value = doc.value.tags || []
+    versions.value = await listVersions(id)
+  } finally {
+    loading.value = false
+  }
+  if (highlightText) {
+    locateHighlight()
+  }
+}
+
+/** 在 Markdown 预览中查找证据句，滚动定位并短暂高亮；渲染未完成时稍后重试。 */
+function locateHighlight(attempt = 0) {
+  const container = document.querySelector('.md-editor-preview') || document.querySelector('.md-preview')
+  if (!container) {
+    if (attempt < 20) setTimeout(() => locateHighlight(attempt + 1), 200)
+    return
+  }
+  const nodes = container.querySelectorAll('p, li, td, th, h1, h2, h3, h4, h5, h6, blockquote')
+  const target = Array.from(nodes).find((n) => n.textContent && n.textContent.includes(highlightText))
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    target.classList.add('hl-flash')
+    setTimeout(() => target.classList.remove('hl-flash'), 4000)
+  }
+}
 
 const sourceLink = computed(() =>
   doc.value.sourceLabel?.startsWith('http') ? doc.value.sourceLabel : null)
@@ -111,17 +146,6 @@ function goBack() {
     router.back()
   } else {
     router.push('/docs')
-  }
-}
-
-async function load() {
-  loading.value = true
-  try {
-    doc.value = await getDoc(id)
-    docTags.value = doc.value.tags || []
-    versions.value = await listVersions(id)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -219,5 +243,11 @@ onMounted(load)
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   padding: 8px 12px;
+}
+.hl-banner { margin-bottom: 8px; }
+:deep(.hl-flash) {
+  background: #fdf6ec;
+  border-radius: 4px;
+  transition: background 1.5s;
 }
 </style>

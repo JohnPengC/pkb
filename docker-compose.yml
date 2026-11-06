@@ -2,6 +2,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: pkb-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: pkb
       POSTGRES_USER: pkb
@@ -17,6 +18,7 @@ services:
   app:
     build: .
     container_name: pkb-app
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -36,6 +38,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: pkb-ollama
+    restart: unless-stopped
     profiles: ["local-llm"]
     ports:
       - "11434:11434"

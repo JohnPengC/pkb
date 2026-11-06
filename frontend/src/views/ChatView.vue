@@ -1,57 +1,90 @@
 <template>
   <div class="chat-page">
     <h2>知识库问答</h2>
-    <el-input v-model="question" type="textarea" :rows="2" placeholder="向你的知识库提问…"
-              @keydown.enter.exact.prevent="ask" />
+
+    <div v-if="messages.length" class="message-list">
+      <div v-for="(m, i) in messages" :key="i" class="message-item">
+        <div class="question">
+          <el-icon class="q-icon"><User /></el-icon>
+          <span>{{ m.question }}</span>
+        </div>
+        <el-card shadow="never" class="answer-card">
+          <template v-if="m.streaming && !m.answer">
+            <el-skeleton :rows="3" animated />
+            <div class="waiting-hint">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              正在检索资料并生成回答…
+            </div>
+          </template>
+          <template v-else>
+            <MdPreview :modelValue="m.answer" />
+            <span v-if="m.streaming" class="stream-cursor">▍</span>
+          </template>
+        </el-card>
+
+        <div v-if="m.sources.length" class="sources-block">
+          <h4>引用来源（{{ m.sources.length }}）</h4>
+          <div v-for="(s, j) in m.sources" :key="j" class="source-item"
+               @click="$router.push(`/docs/${s.documentId}`)">
+            <span class="source-index">[{{ j + 1 }}]</span>
+            <div class="source-body">
+              <div class="source-title">
+                <span class="source-title-text">{{ s.title }}</span>
+                <el-tag size="small" effect="plain" class="source-score">
+                  相关度 {{ Math.round((s.score || 0) * 100) }}%
+                </el-tag>
+              </div>
+              <div v-if="s.evidence" class="source-evidence">“{{ s.evidence }}”</div>
+              <div class="source-snippet">{{ s.snippet }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <el-button v-if="!streaming" text type="info" size="small" @click="clearConversation">
+        清空对话
+      </el-button>
+    </div>
+
+    <el-input v-model="draft" type="textarea" :rows="2" placeholder="向你的知识库提问…"
+              @keydown.enter.exact.prevent="submit" />
     <el-space style="margin: 8px 0">
-      <el-button type="primary" :loading="streaming" :disabled="!question.trim()" @click="ask">
+      <el-button type="primary" :loading="streaming" :disabled="!draft.trim()" @click="submit">
         提问（Enter）
       </el-button>
       <el-checkbox v-model="includeDraft">包含未确认草稿</el-checkbox>
     </el-space>
-
-    <el-card v-if="answer || streaming" shadow="never" style="margin-top: 12px">
-      <template v-if="streaming && !answer">
-        <el-skeleton :rows="4" animated />
-        <div class="waiting-hint">
-          <el-icon class="is-loading"><Loading /></el-icon>
-          正在检索资料并生成回答…
-        </div>
-      </template>
-      <template v-else>
-        <MdPreview :modelValue="answer" />
-        <span v-if="streaming" class="stream-cursor">▍</span>
-      </template>
-    </el-card>
-
-    <div v-if="sources.length" class="sources-block">
-      <h4>引用来源（{{ sources.length }}）</h4>
-      <div v-for="(s, i) in sources" :key="i" class="source-item"
-           @click="$router.push(`/docs/${s.documentId}`)">
-        <span class="source-index">[{{ i + 1 }}]</span>
-        <div class="source-body">
-          <div class="source-title">
-            <span class="source-title-text">{{ s.title }}</span>
-            <el-tag size="small" effect="plain" class="source-score">
-              相关度 {{ Math.round((s.score || 0) * 100) }}%
-            </el-tag>
-          </div>
-          <div class="source-snippet">{{ s.snippet }}</div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
-import { Loading } from '@element-plus/icons-vue'
-import { answer, ask, includeDraft, question, sources, streaming } from '../store/chat'
+import { Loading, User } from '@element-plus/icons-vue'
+import { ask, clearConversation, includeDraft, messages, streaming } from '../store/chat'
+
+const draft = ref('')
+
+function submit() {
+  const text = draft.value
+  draft.value = ''
+  ask(text)
+}
 </script>
 
 <style scoped>
 .chat-page { max-width: 860px; }
+.message-list { margin-bottom: 16px; }
+.message-item { margin-bottom: 24px; }
+.question {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.q-icon { margin-top: 3px; color: var(--el-color-primary); }
+.answer-card { margin-bottom: 4px; }
 .waiting-hint {
   display: flex;
   align-items: center;
@@ -67,7 +100,7 @@ import { answer, ask, includeDraft, question, sources, streaming } from '../stor
   margin-left: 2px;
 }
 @keyframes blink { 50% { opacity: 0; } }
-.sources-block { margin-top: 16px; }
+.sources-block { margin-top: 12px; }
 .sources-block h4 { margin: 0 0 8px; color: #606266; }
 .source-item {
   display: flex;
@@ -100,6 +133,14 @@ import { answer, ask, includeDraft, question, sources, streaming } from '../stor
   white-space: nowrap;
 }
 .source-score { flex: none; }
+.source-evidence {
+  color: #b88230;
+  background: #fdf6ec;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
 .source-snippet {
   color: #606266;
   font-size: 13px;

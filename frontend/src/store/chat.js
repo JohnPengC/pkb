@@ -1,41 +1,64 @@
 import { ref } from 'vue'
 
-// 模块级状态：路由切换（如点击引用查看文档详情）不丢失问答内容；
+// 模块级状态：路由切换（如点击引用查看文档详情）不丢失会话；
 // 流式连接挂在模块上，离开页面期间继续接收，返回时直接看到最新结果。
-export const question = ref('')
-export const answer = ref('')
-export const sources = ref([])
+export const messages = ref([])
 export const includeDraft = ref(false)
 export const streaming = ref(false)
 
+const MAX_HISTORY_TURNS = 5
 let eventSource = null
+let currentMessage = null
 
-export function ask() {
-  if (!question.value.trim() || streaming.value) return
+export function ask(questionText) {
+  const text = (questionText ?? '').trim()
+  if (!text || streaming.value) return
   closeStream()
-  answer.value = ''
-  sources.value = []
+
+  currentMessage = {
+    question: text,
+    answer: '',
+    sources: [],
+    streaming: true
+  }
+  messages.value.push(currentMessage)
   streaming.value = true
 
-  const params = new URLSearchParams({ question: question.value, includeDraft: includeDraft.value })
+  const history = messages.value
+    .slice(0, -1)
+    .slice(-MAX_HISTORY_TURNS)
+    .map((m) => ({ question: m.question, answer: m.answer }))
+  const params = new URLSearchParams({
+    question: text,
+    includeDraft: includeDraft.value,
+    history: JSON.stringify(history)
+  })
   eventSource = new EventSource(`/api/chat?${params}`)
   eventSource.addEventListener('sources', (e) => {
-    sources.value = JSON.parse(e.data)
+    currentMessage.sources = JSON.parse(e.data)
   })
   eventSource.addEventListener('token', (e) => {
-    answer.value += e.data
+    currentMessage.answer += e.data
   })
-  eventSource.addEventListener('done', () => {
-    streaming.value = false
-    closeStream()
-  })
-  eventSource.onerror = () => {
-    streaming.value = false
-    closeStream()
+  eventSource.addEventListener('done', () => finish())
+  eventSource.onerror = () => finish()
+}
+
+function finish() {
+  if (currentMessage) {
+    currentMessage.streaming = false
   }
+  streaming.value = false
+  closeStream()
 }
 
 export function closeStream() {
   eventSource?.close()
   eventSource = null
+}
+
+export function clearConversation() {
+  closeStream()
+  messages.value = []
+  streaming.value = false
 }

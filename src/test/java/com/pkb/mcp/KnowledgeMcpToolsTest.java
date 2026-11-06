@@ -24,7 +24,7 @@ class KnowledgeMcpToolsTest {
     @Test
     void searchDefaultsToTop5ConfirmedOnly() {
         when(retrievalService.search(anyString(), anyInt(), eq(false)))
-                .thenReturn(List.of(new SearchHit(UUID.randomUUID(), "标题", "片段", 0.9)));
+                .thenReturn(List.of(new SearchHit(UUID.randomUUID(), "标题", "片段", 0.9, "证据句")));
         List<SearchHit> hits = tools.searchKnowledge("风控", null);
         assertThat(hits).hasSize(1);
         verify(retrievalService).search("风控", 5, false);

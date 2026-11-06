@@ -22,6 +22,7 @@ public class RetrievalService {
     private final EmbeddingProvider embeddingProvider;
     private final ChunkRepository chunkRepository;
     private final KnowledgeDocumentRepository documentRepository;
+    private final SentencePicker sentencePicker;
 
     /**
      * 混合检索：向量 topK*2 + 关键词 topK*2，同块合并取高分。
@@ -79,10 +80,12 @@ public class RetrievalService {
 
         List<SearchHit> hits = new ArrayList<>();
         for (Scored s : top) {
+            String content = s.row().content();
             hits.add(new SearchHit(s.row().documentId(),
                     titles.getOrDefault(s.row().documentId(), "（未知文档）"),
-                    snippet(s.row().content()),
-                    s.score()));
+                    snippet(content),
+                    s.score(),
+                    sentencePicker.pick(content, query)));
         }
         return hits;
     }

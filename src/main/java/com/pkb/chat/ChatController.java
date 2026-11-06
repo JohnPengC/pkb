@@ -18,7 +18,8 @@ public class ChatController {
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<Object>> ask(@RequestParam String question,
+                                             @RequestParam(required = false) String history,
                                              @RequestParam(defaultValue = "false") boolean includeDraft) {
-        return chatService.ask(question, includeDraft);
+        return chatService.ask(question, chatService.parseHistory(history), includeDraft);
     }
 }

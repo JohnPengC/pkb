@@ -19,7 +19,7 @@
 
 ## P2 导入源扩展
 
-- [ ] JS 渲染页面抓取：headless 浏览器（Playwright）或 Reader 服务
+- [x] JS 渲染页面抓取：URL 正文为空时 Playwright 无头渲染兜底
 - [ ] 跨维度 embedding 模型：动态维度迁移（现固定 1024 维）
 - [ ] 邮件 / 视频导入（spec 排除项，按需）
 

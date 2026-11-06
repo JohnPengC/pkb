@@ -51,4 +51,4 @@ pkb:
       base-url: ${EMBEDDING_BASE_URL:https://api.moonshot.cn/v1}
       api-key: ${EMBEDDING_API_KEY:changeme}
       model: ${EMBEDDING_MODEL:text-embedding-3-small}
-      dimension: 1024
+      dimension: ${EMBEDDING_DIMENSION:1024}

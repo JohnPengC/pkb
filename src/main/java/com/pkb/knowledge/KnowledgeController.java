@@ -47,6 +47,17 @@ public class KnowledgeController {
         return toDetail(knowledgeService.confirm(id));
     }
 
+    @GetMapping("/export")
+    public org.springframework.http.ResponseEntity<byte[]> export() {
+        byte[] zip = knowledgeService.exportAll();
+        String filename = "pkb-export-" + java.time.LocalDate.now() + ".zip";
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filename + "\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM)
+                .body(zip);
+    }
+
     @GetMapping("/{id}/source")
     public SourceText source(@PathVariable UUID id) {
         return knowledgeService.getSourceText(id);

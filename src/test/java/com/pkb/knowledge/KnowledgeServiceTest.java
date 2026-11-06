@@ -101,6 +101,33 @@ class KnowledgeServiceTest extends AbstractIntegrationTest {
         assertThat(st.sourceType()).isEqualTo("FILE");
     }
 
+    @Test
+    void exportAllBuildsZipWithFrontmatter() throws Exception {
+        KnowledgeDocument doc = knowledgeService.createDraft(newSource(),
+                new DistilledDraft("导出/测试：文档", "摘要", "## 正文\n内容"));
+        knowledgeService.setTags(doc.getId(), List.of("导出", "测试"));
+
+        byte[] zipBytes = knowledgeService.exportAll();
+
+        try (java.util.zip.ZipInputStream zip =
+                     new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zipBytes))) {
+            java.util.List<String> names = new java.util.ArrayList<>();
+            String content = null;
+            java.util.zip.ZipEntry e;
+            while ((e = zip.getNextEntry()) != null) {
+                names.add(e.getName());
+                if (e.getName().endsWith(".md")) {
+                    content = new String(zip.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            }
+            assertThat(names).anyMatch(n -> n.endsWith(".md"));
+            assertThat(content).contains("title: \"导出/测试：文档\"")
+                    .contains("tags: [导出, 测试]")
+                    .contains("status: DRAFT")
+                    .contains("## 正文");
+        }
+    }
+
     private SourceDocument newSource() {
         SourceDocument doc = new SourceDocument();
         doc.setSourceType(SourceType.FILE);

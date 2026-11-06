@@ -1,6 +1,17 @@
 # PKB — 个人知识库
 
+[![CI](https://github.com/JohnPengC/pkb/actions/workflows/ci.yml/badge.svg)](https://github.com/JohnPengC/pkb/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Java](https://img.shields.io/badge/Java-17-007396?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-6DB33F?logo=springboot)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs)
+![PGvector](https://img.shields.io/badge/PGvector-16-4169E1?logo=postgresql)
+
 把本地文档（docx / PDF / PPTX / XLSX / CSV / txt / md）和收藏网页，用 LLM 提炼为结构化知识文档，形成可纠错、可检索的个人知识库；并以 MCP Server 形式外挂到 Claude Code / Kimi Code 等 AI 编程工具，或在内置界面中基于知识库进行 RAG 问答。
+
+| 知识文档列表 | 文档详情（结构化 + 版本） | 导入（多文件 / 文件夹 / 两种模式） |
+| --- | --- | --- |
+| ![docs](docs/screenshots/docs.png) | ![detail](docs/screenshots/detail.png) | ![import](docs/screenshots/import.png) |
 
 ## 功能
 

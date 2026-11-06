@@ -159,4 +159,55 @@ public class KnowledgeService {
                 ? source.getFileName() : source.getUrl();
         return new SourceText(text, label, source.getSourceType().name());
     }
+
+    /** 导出全部知识文档为 Markdown 打包（zip），每个文件含 YAML frontmatter。 */
+    @Transactional(readOnly = true)
+    public byte[] exportAll() {
+        List<KnowledgeDocument> docs = documentRepository.findAll();
+        try (java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+             java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(bos, java.nio.charset.StandardCharsets.UTF_8)) {
+            java.util.Set<String> usedNames = new java.util.HashSet<>();
+            for (KnowledgeDocument d : docs) {
+                String tags = tagRepository.findByDocumentId(d.getId()).stream()
+                        .map(Tag::getName).reduce((a, b) -> a + ", " + b).orElse("");
+                var src = d.getSourceDocument();
+                String label = src.getSourceType() == SourceType.FILE ? src.getFileName() : src.getUrl();
+                String entry = uniqueEntryName(usedNames, d.getTitle(), d.getId()) + ".md";
+                zip.putNextEntry(new java.util.zip.ZipEntry(entry));
+                zip.write(("---\n"
+                        + "title: " + yaml(d.getTitle()) + "\n"
+                        + "summary: " + yaml(d.getSummary() == null ? "" : d.getSummary()) + "\n"
+                        + "tags: [" + tags + "]\n"
+                        + "status: " + d.getStatus().name() + "\n"
+                        + "version: " + d.getCurrentVersion() + "\n"
+                        + "source: " + yaml(label == null ? "" : label) + "\n"
+                        + "updated: " + d.getUpdatedAt() + "\n"
+                        + "---\n\n"
+                        + d.getContent() + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                zip.closeEntry();
+            }
+            zip.finish();
+            return bos.toByteArray();
+        } catch (java.io.IOException e) {
+            throw new BizException("导出失败：" + e.getMessage());
+        }
+    }
+
+    private String yaml(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ") + "\"";
+    }
+
+    private String uniqueEntryName(java.util.Set<String> used, String title, UUID id) {
+        String base = title == null || title.isBlank() ? "untitled" : title;
+        base = base.replaceAll("[\\\\/:*?\"<>|\\s]", "-").replaceAll("-{2,}", "-");
+        if (base.length() > 60) {
+            base = base.substring(0, 60);
+        }
+        String name = base;
+        int n = 2;
+        while (!used.add(name)) {
+            name = base + "-" + n++;
+        }
+        return name;
+    }
 }

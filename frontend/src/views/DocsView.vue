@@ -11,6 +11,7 @@
       </el-select>
       <el-input v-model="filters.keyword" placeholder="搜索标题/摘要" clearable style="width: 220px"
                 @change="load" />
+      <el-button @click="doExport">导出全部（Markdown 打包）</el-button>
     </el-space>
 
     <el-table :data="page.content" v-loading="loading" @row-click="(row) => open(row.id)" style="cursor: pointer">
@@ -66,6 +67,10 @@ async function load(pageNo = 0) {
 
 function open(id) {
   router.push(`/docs/${id}`)
+}
+
+function doExport() {
+  window.location.href = '/api/docs/export'
 }
 
 async function doDelete(row) {

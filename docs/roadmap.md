@@ -5,10 +5,10 @@
 
 ## P0 工程质量（开源门面）
 
-- [ ] GitHub Actions CI（`mvn test` 需 Docker runner，Testcontainers 拉 pgvector）
-- [ ] e2e 清单剩余项走查（xlsx/pptx 实文件、图片/音频导入实测）
-- [ ] README 徽章、界面截图、CONTRIBUTING.md
-- [ ] 知识库导出：全部知识文档打包为 MD bundle（防锁定、可迁移）
+- [x] GitHub Actions CI（`mvn test` 需 Docker runner，Testcontainers 拉 pgvector）
+- [x] e2e 清单剩余项走查（xlsx/pptx 实文件、图片/音频导入实测）
+- [x] README 徽章、界面截图、CONTRIBUTING.md
+- [x] 知识库导出：全部知识文档打包为 MD bundle（防锁定、可迁移）
 
 ## P1 检索与问答质量
 

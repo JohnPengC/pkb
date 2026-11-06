@@ -49,18 +49,40 @@
           <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="方式" width="90">
+        <template #default="{ row }">
+          <el-tag size="small" effect="plain" :type="row.processMode === 'RAW' ? 'warning' : 'info'">
+            {{ row.processMode === 'RAW' ? '原文' : '提炼' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="errorMessage" label="错误" show-overflow-tooltip />
       <el-table-column prop="updatedAt" label="更新时间" width="200">
         <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="140">
+      <el-table-column label="操作" width="220">
         <template #default="{ row }">
           <el-button v-if="row.status === 'FAILED'" size="small" @click="doRetry(row.id)">重试</el-button>
+          <el-button v-if="row.status === 'COMPLETED'" size="small"
+                     @click="openRedistill(row)">重提炼</el-button>
           <el-button v-if="['COMPLETED', 'FAILED'].includes(row.status)" size="small" type="danger"
                      plain @click="doDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
+
+    <el-dialog v-model="redistillVisible" title="重新提炼" width="420px">
+      <p style="margin-top: 0">将以新的处理方式重跑「{{ redistillRow?.sourceLabel }}」，
+        原知识文档（含全部版本）会被清除并重新生成。</p>
+      <el-radio-group v-model="redistillMode">
+        <el-radio value="DISTILL">AI 提炼（结构化知识文档）</el-radio>
+        <el-radio value="RAW">仅转 Markdown（原文入库）</el-radio>
+      </el-radio-group>
+      <template #footer>
+        <el-button @click="redistillVisible = false">取消</el-button>
+        <el-button type="primary" :loading="redistilling" @click="doRedistill">开始重提炼</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -68,7 +90,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { deleteTask, listTasks, retryTask, submitUrl, uploadFile } from '../api/ingest'
+import { deleteTask, listTasks, redistillTask, retryTask, submitUrl, uploadFile } from '../api/ingest'
 
 const url = ref('')
 const processMode = ref('DISTILL')
@@ -158,6 +180,29 @@ async function doDelete(row) {
   await deleteTask(row.id)
   ElMessage.success('导入记录已删除')
   refresh()
+}
+
+const redistillVisible = ref(false)
+const redistillMode = ref('DISTILL')
+const redistillRow = ref(null)
+const redistilling = ref(false)
+
+function openRedistill(row) {
+  redistillRow.value = row
+  redistillMode.value = row.processMode === 'RAW' ? 'DISTILL' : 'RAW'
+  redistillVisible.value = true
+}
+
+async function doRedistill() {
+  redistilling.value = true
+  try {
+    await redistillTask(redistillRow.value.id, redistillMode.value)
+    ElMessage.success('已提交重新提炼任务')
+    redistillVisible.value = false
+    refresh()
+  } finally {
+    redistilling.value = false
+  }
 }
 
 onMounted(() => {

@@ -22,3 +22,7 @@ export function retryTask(id) {
 export function deleteTask(id) {
   return http.delete(`/ingest/tasks/${id}`)
 }
+
+export function redistillTask(id, mode) {
+  return http.post(`/ingest/tasks/${id}/redistill`, { mode }).then((r) => r.data)
+}

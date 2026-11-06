@@ -151,6 +151,28 @@ public class IngestionService {
         }
     }
 
+    /** 重新提炼：已完成任务换处理方式重跑（或失败任务以新方式重试）。旧知识文档级联清除。 */
+    @Transactional
+    public ImportTask redistill(UUID taskId, ProcessMode mode) {
+        ImportTask task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new BizException("任务不存在"));
+        if (task.getStatus() != TaskStatus.COMPLETED && task.getStatus() != TaskStatus.FAILED) {
+            throw new BizException("任务执行中，暂不能重新提炼");
+        }
+        SourceDocument source = task.getSourceDocument();
+        var existingDoc = knowledgeDocumentRepository.findBySourceDocumentId(source.getId());
+        if (existingDoc.isPresent() && task.getProcessMode() == mode) {
+            throw new BizException("该任务已是「" + (mode == ProcessMode.RAW ? "仅转 Markdown" : "AI 提炼") + "」方式");
+        }
+        existingDoc.ifPresent(doc -> knowledgeService.delete(doc.getId()));
+        task.setProcessMode(mode);
+        task.setRetryCount(0);
+        task.setErrorMessage(null);
+        task.markStatus(TaskStatus.PENDING);
+        launchAfterCommit(task.getId());
+        return task;
+    }
+
     private ImportTask createAndLaunch(SourceDocument doc, ProcessMode mode) {
         ImportTask task = new ImportTask();
         task.setSourceDocument(doc);

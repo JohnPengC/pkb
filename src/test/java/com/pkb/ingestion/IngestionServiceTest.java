@@ -113,4 +113,27 @@ class IngestionServiceTest extends AbstractIntegrationTest {
         ImportTask task = ingestionService.createFromFile(file, ProcessMode.RAW);
         assertThat(task.getProcessMode()).isEqualTo(ProcessMode.RAW);
     }
+
+    @Test
+    void redistillSwitchesModeAndClearsOldDoc() {
+        UUID taskId = newTaskId("re-a.txt", "重新提炼测试内容");
+        ImportTask task = taskRepository.findById(taskId).orElseThrow();
+        SourceDocument source = task.getSourceDocument();
+        var doc = knowledgeService.createDraft(source,
+                new DistilledDraft("旧标题", "摘要", "旧内容"), ProcessMode.DISTILL);
+        task.markStatus(TaskStatus.COMPLETED);
+        taskRepository.save(task);
+
+        // 同模式守卫：已完成且方式不变 → 拒绝
+        assertThatThrownBy(() -> ingestionService.redistill(taskId, ProcessMode.DISTILL))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("已是");
+
+        // 切换模式：旧文档清除、任务回到排队
+        ImportTask updated = ingestionService.redistill(taskId, ProcessMode.RAW);
+
+        assertThat(updated.getProcessMode()).isEqualTo(ProcessMode.RAW);
+        assertThat(updated.getStatus()).isEqualTo(TaskStatus.PENDING);
+        assertThat(knowledgeDocumentRepository.findById(doc.getId())).isEmpty();
+    }
 }

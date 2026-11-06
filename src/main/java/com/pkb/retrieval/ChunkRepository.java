@@ -47,20 +47,33 @@ public class ChunkRepository {
     }
 
     public List<ChunkRow> keywordSearch(String keyword, int limit, boolean confirmedOnly) {
-        String sql = """
-                SELECT c.id, c.document_id, c.content, c.chunk_type, 0.5 AS distance
-                FROM document_chunk c
-                JOIN knowledge_document d ON d.id = c.document_id
-                WHERE c.content ILIKE '%%' || ? || '%%'
-                %s
-                LIMIT ?
-                """.formatted(confirmedOnly ? "AND d.status = 'CONFIRMED'" : "");
+        // 查询按空白拆成多个词项，全部命中（AND）才入选——容忍词序与间隔，符合中文检索习惯
+        List<String> terms = java.util.Arrays.stream(keyword.split("\\s+"))
+                .map(String::strip).filter(s -> !s.isEmpty()).toList();
+        if (terms.isEmpty()) {
+            return List.of();
+        }
+        StringBuilder where = new StringBuilder("WHERE ");
+        for (int i = 0; i < terms.size(); i++) {
+            if (i > 0) {
+                where.append(" AND ");
+            }
+            where.append("c.content ILIKE '%' || ? || '%'");
+        }
+        if (confirmedOnly) {
+            where.append(" AND d.status = 'CONFIRMED'");
+        }
+        String sql = "SELECT c.id, c.document_id, c.content, c.chunk_type, 0.5 AS distance "
+                + "FROM document_chunk c JOIN knowledge_document d ON d.id = c.document_id "
+                + where + " LIMIT ?";
+        List<Object> args = new java.util.ArrayList<>(terms);
+        args.add(limit);
         return jdbc.query(sql, (rs, rowNum) -> new ChunkRow(
                 UUID.fromString(rs.getString("id")),
                 UUID.fromString(rs.getString("document_id")),
                 rs.getString("content"),
                 rs.getDouble("distance"),
-                rs.getString("chunk_type")), keyword, limit);
+                rs.getString("chunk_type")), args.toArray());
     }
 
     /** 返回库中实际使用的 embedding 模型标识（无数据返回 null）。 */

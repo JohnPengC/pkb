@@ -46,5 +46,13 @@ class SchemaMigrationTest extends AbstractIntegrationTest {
                     String.class);
             assertThat(processMode).isEqualTo("process_mode");
         }
+
+        // V4：中文检索加速（pg_trgm 三元组索引）
+        String trgm = jdbc.queryForObject(
+                "SELECT extname FROM pg_extension WHERE extname = 'pg_trgm'", String.class);
+        assertThat(trgm).isEqualTo("pg_trgm");
+        Integer trgmIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE indexname LIKE '%trgm%'", Integer.class);
+        assertThat(trgmIndexes).isGreaterThanOrEqualTo(3);
     }
 }

@@ -99,6 +99,29 @@ class RetrievalServiceTest extends AbstractIntegrationTest {
         assertThat(hits).extracting(SearchHit::title).contains("审批文档");
     }
 
+    @Test
+    void multiTermKeywordSearchMatchesEachTermIndependently() {
+        when(embeddingProvider.embedAll(anyList())).thenAnswer(inv -> {
+            List<String> texts = inv.getArgument(0);
+            return texts.stream().map(RetrievalServiceTest::vectorOf).toList();
+        });
+        when(embeddingProvider.embed(anyString())).thenAnswer(inv -> vectorOf(inv.getArgument(0)));
+        when(embeddingProvider.modelId()).thenReturn("test-embedding");
+
+        KnowledgeDocument doc = knowledgeService.createDraft(newSource(),
+                new DistilledDraft("多词检索文档", "摘要", "贷前审查流程包含材料清单核验步骤。"));
+        indexService.reindex(doc.getId());
+
+        // 两个词都在正文中但不相邻、顺序不同 → 命中
+        List<SearchHit> hits = retrievalService.search("清单 贷前", 5, true).stream()
+                .filter(h -> h.documentId().equals(doc.getId())).toList();
+        assertThat(hits).isNotEmpty();
+        // 其中一个词不存在 → 不命中
+        List<SearchHit> miss = retrievalService.search("贷前 不存在XYZ词", 5, true).stream()
+                .filter(h -> h.documentId().equals(doc.getId())).toList();
+        assertThat(miss).isEmpty();
+    }
+
     /** 把文本映射为确定性向量：按内容哈希散布，保证同内容向量一致。 */
     private static float[] vectorOf(String text) {
         float[] v = new float[1024];

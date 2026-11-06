@@ -53,14 +53,20 @@ public class IngestionController {
         ingestionService.deleteTask(id);
     }
 
+    @PostMapping("/tasks/{id}/redistill")
+    public TaskView redistill(@PathVariable UUID id, @RequestBody(required = false) Map<String, String> body) {
+        return TaskView.from(ingestionService.redistill(id, parseMode(body == null ? null : body.get("mode"))));
+    }
+
     public record TaskView(UUID id, String status, String errorMessage, int retryCount,
-                           String sourceLabel, String createdAt, String updatedAt) {
+                           String sourceLabel, String createdAt, String updatedAt, String processMode) {
         static TaskView from(ImportTask task) {
             var doc = task.getSourceDocument();
             String label = doc.getSourceType() == SourceType.FILE ? doc.getFileName() : doc.getUrl();
             return new TaskView(task.getId(), task.getStatus().name(), task.getErrorMessage(),
                     task.getRetryCount(), label,
-                    task.getCreatedAt().toString(), task.getUpdatedAt().toString());
+                    task.getCreatedAt().toString(), task.getUpdatedAt().toString(),
+                    task.getProcessMode().name());
         }
     }
 }
